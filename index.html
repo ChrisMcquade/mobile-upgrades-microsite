@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>O2 Upgrades — Agentic Intent POC</title>
+
+<!-- ces-messenger web component (NOT chat-messenger v1.16 — this site needs
+     registerClientSideFunction for the GenUI client function tools, which is
+     only available on ces-messenger). -->
+<script src="https://www.gstatic.com/ces-console/fast/ces-messenger/ces-messenger.js"></script>
+
+<style>
+  /* Float the GECX widget as a fixed chat panel, hidden until launched.
+     The <ces-messenger> element is created dynamically on first launch so no
+     Google session (token broker / billable session) starts on page load —
+     same discipline as the QuickStart microsite. */
+  ces-messenger{
+    position:fixed;
+    right:24px;
+    bottom:24px;
+    z-index:999;
+    width:460px;
+    max-width:calc(100vw - 48px);
+    height:min(680px, calc(100vh - 48px));
+  }
+  @media(max-width:520px){
+    ces-messenger{right:0;bottom:0;width:100vw;max-width:100vw;height:100dvh}
+  }
+</style>
+
+<style>
+  :root{
+    --ink:#04060f;          /* deep navy-black — O2's night-sky, not VM's warm black */
+    --ink-soft:#0a0f1f;
+    --paper:#f4f6fb;
+    --blue:#00a0e4;         /* O2 light blue */
+    --blue-deep:#0019a5;    /* O2 primary blue */
+    --line:rgba(255,255,255,0.10);
+    --muted:#8b93a8;
+    --ok:#26a56d;
+    --amber:#d29a2b;
+    --warn:#e05a5a;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;
+    background:var(--ink);
+    color:var(--paper);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:0 28px}
+  :focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:4px}
+
+  /* ---- nav ---- */
+  nav{position:sticky;top:0;z-index:50;background:rgba(4,6,15,0.84);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:62px}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:700;letter-spacing:-0.01em;font-size:15px}
+  .brand .dot{width:11px;height:11px;border-radius:50%;background:var(--blue);box-shadow:0 0 14px rgba(0,160,228,0.7)}
+  .navlinks{display:flex;gap:26px}
+  .navlinks a{color:var(--muted);text-decoration:none;font-size:13px;letter-spacing:0.02em;transition:color .2s}
+  .navlinks a:hover{color:var(--paper)}
+  @media(max-width:760px){.navlinks{display:none}}
+
+  /* ---- hero (O2 bubbles as light, not decoration) ---- */
+  header{position:relative;padding:96px 0 74px;border-bottom:1px solid var(--line);overflow:hidden}
+  header::before{content:"";position:absolute;inset:0;pointer-events:none;background:
+    radial-gradient(560px 560px at 82% -10%,rgba(0,160,228,0.20),transparent 65%),
+    radial-gradient(340px 340px at 68% 55%,rgba(0,25,165,0.35),transparent 70%),
+    radial-gradient(200px 200px at 92% 40%,rgba(0,160,228,0.14),transparent 70%)}
+  .bubble{position:absolute;border-radius:50%;border:1px solid rgba(0,160,228,0.25);pointer-events:none}
+  .b1{width:220px;height:220px;right:12%;top:60px;animation:drift 14s ease-in-out infinite}
+  .b2{width:90px;height:90px;right:28%;top:210px;animation:drift 11s ease-in-out infinite reverse}
+  .b3{width:44px;height:44px;right:8%;top:330px;animation:drift 9s ease-in-out infinite}
+  @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
+  @media(prefers-reduced-motion:reduce){.b1,.b2,.b3{animation:none}}
+  .eyebrow{font-size:12px;letter-spacing:0.22em;text-transform:uppercase;color:var(--blue);font-weight:600;margin-bottom:22px}
+  h1{font-size:clamp(38px,6.4vw,76px);line-height:0.98;letter-spacing:-0.03em;font-weight:800;max-width:15ch}
+  h1 .thin{font-weight:300;color:var(--muted)}
+  .lede{margin-top:26px;font-size:clamp(16px,2vw,20px);color:#ccd3e4;max-width:56ch;font-weight:300}
+  .lede strong{color:var(--paper);font-weight:600}
+  .hero-cta{margin-top:34px;display:inline-flex;align-items:center;gap:10px;background:var(--blue);color:#04121d;text-decoration:none;
+    padding:14px 26px;border-radius:40px;font-weight:700;font-size:14px;letter-spacing:0.01em;border:none;cursor:pointer;transition:transform .18s,box-shadow .18s}
+  .hero-cta:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,160,228,0.35)}
+  .alt-cta{display:inline-flex;align-items:center;gap:9px;background:transparent;color:var(--paper);border:1px solid var(--line);
+    padding:12px 22px;border-radius:40px;font-weight:600;font-size:13.5px;letter-spacing:0.01em;cursor:pointer;transition:border-color .2s,background .2s}
+  .alt-cta:hover{border-color:var(--blue);background:rgba(0,160,228,0.08)}
+
+  /* ---- stat band ---- */
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border-top:1px solid var(--line);background:var(--ink-soft)}
+  .stat{padding:34px 22px;border-right:1px solid var(--line)}
+  .stat:last-child{border-right:none}
+  .stat .n{font-size:clamp(28px,3.6vw,42px);font-weight:800;letter-spacing:-0.02em;line-height:1}
+  .stat .n .unit{color:var(--blue);font-size:0.5em;vertical-align:super;margin-left:2px}
+  .stat .l{margin-top:12px;font-size:12.5px;color:var(--muted);line-height:1.45}
+  @media(max-width:860px){.stats{grid-template-columns:repeat(2,1fr)}.stat:nth-child(2){border-right:none}.stat{border-bottom:1px solid var(--line)}}
+  @media(max-width:460px){.stats{grid-template-columns:1fr}.stat{border-right:none}}
+
+  /* ---- section scaffold ---- */
+  section{padding:84px 0;border-bottom:1px solid var(--line)}
+  .sec-label{font-size:12px;letter-spacing:0.2em;text-transform:uppercase;color:var(--blue);font-weight:600;margin-bottom:18px}
+  h2{font-size:clamp(28px,4.2vw,46px);line-height:1.04;letter-spacing:-0.025em;font-weight:800;max-width:22ch}
+  h2 .thin{font-weight:300;color:var(--muted)}
+  .sec-body{margin-top:22px;max-width:62ch;color:#c3cade;font-weight:300;font-size:16.5px}
+  .sec-body strong{color:var(--paper);font-weight:600}
+
+  .pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:44px}
+  @media(max-width:860px){.pillars{grid-template-columns:1fr}}
+  .pillar{border:1px solid var(--line);border-radius:14px;padding:22px;background:rgba(255,255,255,0.02)}
+  .pillar h4{font-size:15px;font-weight:700;margin-bottom:8px}
+  .pillar h4 .tag{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#04121d;background:var(--blue);padding:3px 8px;border-radius:20px;font-weight:700;margin-right:9px}
+  .pillar p{font-size:13.5px;color:var(--muted);line-height:1.5}
+
+  /* ---- utterance evidence ---- */
+  .split{display:grid;grid-template-columns:1.05fr 0.95fr;gap:50px;align-items:start;margin-top:46px}
+  @media(max-width:880px){.split{grid-template-columns:1fr;gap:36px}}
+  .barrow{display:grid;grid-template-columns:190px 1fr 62px;gap:12px;align-items:center;margin-bottom:13px;font-size:13px}
+  .barrow .cat{color:#c3cade}
+  .barrow .track{height:10px;border-radius:6px;background:rgba(255,255,255,0.06);overflow:hidden}
+  .barrow .fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--blue-deep),var(--blue))}
+  .barrow.mis .fill{background:linear-gradient(90deg,#7a2f2f,var(--warn))}
+  .barrow.amb .fill{background:linear-gradient(90deg,#6b551f,var(--amber))}
+  .barrow .pct{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+  .legend{display:flex;gap:18px;margin-top:20px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  .quotes{display:flex;flex-direction:column;gap:12px}
+  .quote{border:1px solid var(--line);border-left:3px solid var(--blue);border-radius:0 12px 12px 0;padding:14px 16px;background:rgba(255,255,255,0.02)}
+  .quote.mis{border-left-color:var(--warn)}
+  .quote p{font-size:14px;color:#dbe1ef}
+  .quote .who{margin-top:7px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .callout{margin-top:34px;border:1px solid rgba(0,160,228,0.35);background:rgba(0,160,228,0.06);border-radius:14px;padding:20px 22px;max-width:70ch}
+  .callout p{font-size:14px;color:#cfd6e8}
+  .callout p strong{color:var(--paper)}
+
+  /* ---- journey ---- */
+  .journey{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:46px}
+  @media(max-width:900px){.journey{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:560px){.journey{grid-template-columns:1fr}}
+  .jcard{border:1px solid var(--line);border-radius:16px;padding:24px 22px;background:linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0.01));transition:border-color .25s,transform .25s}
+  .jcard:hover{border-color:rgba(0,160,228,0.55);transform:translateY(-3px)}
+  .jcard .idx{font-size:11px;letter-spacing:0.14em;color:var(--muted);font-weight:600}
+  .jcard .idx b{color:var(--blue)}
+  .jcard h3{margin-top:14px;font-size:17px;line-height:1.25;font-weight:700}
+  .jcard p{margin-top:10px;font-size:13px;color:var(--muted);line-height:1.55}
+  .jcard .chip{display:inline-block;margin-top:14px;font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px;background:rgba(0,160,228,0.14);color:#5fc4f2;border:1px solid rgba(0,160,228,0.4)}
+
+  /* ---- GenUI playground (signature) ---- */
+  .play{margin-top:46px;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--ink-soft)}
+  .play-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .play-head .t{font-size:13px;font-weight:700;letter-spacing:0.04em}
+  .play-head .t span{color:var(--blue)}
+  .play-btns{display:flex;gap:10px;flex-wrap:wrap}
+  .play-btn{font-size:12.5px;font-weight:600;padding:9px 16px;border-radius:30px;border:1px solid var(--line);background:transparent;color:var(--paper);cursor:pointer;transition:border-color .2s,background .2s}
+  .play-btn:hover{border-color:var(--blue);background:rgba(0,160,228,0.08)}
+  .play-btn.active{background:var(--blue);color:#04121d;border-color:var(--blue)}
+  .play-body{display:grid;grid-template-columns:1fr 1fr;min-height:380px}
+  @media(max-width:880px){.play-body{grid-template-columns:1fr}}
+  .play-stage{padding:26px;display:flex;align-items:flex-start;justify-content:center;background:
+    radial-gradient(420px 260px at 30% 0%,rgba(0,25,165,0.25),transparent 70%)}
+  .play-json{border-left:1px solid var(--line);background:#030509;padding:20px;overflow:auto;max-height:520px}
+  @media(max-width:880px){.play-json{border-left:none;border-top:1px solid var(--line)}}
+  .play-json .jt{font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:12px}
+  .play-json pre{font:12px/1.55 "SF Mono",Consolas,Menlo,monospace;color:#9fd8f3;white-space:pre-wrap;word-break:break-word}
+  .play-note{padding:14px 20px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+  .play-note b{color:var(--paper)}
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:var(--blue);color:#04121d;font-size:13px;font-weight:700;
+    padding:12px 20px;border-radius:30px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:1000;max-width:92vw;text-align:center}
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* ---- GenUI rendered components (shared by playground AND chat transcript) ---- */
+  .gx-card{width:100%;max-width:430px;border:1px solid rgba(0,160,228,0.35);border-radius:16px;background:#fff;color:#101a2e;overflow:hidden;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif}
+  .gx-card .gx-head{padding:13px 16px;background:linear-gradient(90deg,#0019a5,#0060c0);color:#fff;font-size:13.5px;font-weight:700}
+  .gx-devices{display:grid;grid-template-columns:repeat(2,1fr)}
+  .gx-devices.three{grid-template-columns:repeat(3,1fr)}
+  .gx-dev{padding:14px 12px 16px;border-right:1px solid #e6eaf3;display:flex;flex-direction:column;gap:7px}
+  .gx-dev:last-child{border-right:none}
+  .gx-phone{width:44px;height:78px;border-radius:9px;border:2px solid #0019a5;position:relative;margin:2px auto 6px;background:linear-gradient(160deg,#eaf4ff,#cfe6ff)}
+  .gx-phone::after{content:"";position:absolute;top:5px;left:50%;transform:translateX(-50%);width:14px;height:3px;border-radius:2px;background:#0019a5;opacity:.5}
+  .gx-dev .nm{font-size:13px;font-weight:800;text-align:center;line-height:1.2}
+  .gx-dev .pr{font-size:12px;text-align:center;color:#0019a5;font-weight:700}
+  .gx-dev .pr small{display:block;color:#5a6478;font-weight:400}
+  .gx-spec{font-size:11px;color:#4c5872;display:flex;justify-content:space-between;gap:8px;border-top:1px dashed #e6eaf3;padding-top:5px}
+  .gx-spec b{color:#101a2e;font-weight:600;text-align:right}
+  .gx-btn{margin-top:auto;font-size:12px;font-weight:700;padding:8px 10px;border-radius:22px;border:none;cursor:pointer;background:#0019a5;color:#fff;transition:background .2s}
+  .gx-btn:hover{background:#0060c0}
+  .gx-opts{padding:6px 0}
+  .gx-opt{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;text-align:left;padding:13px 16px;border:none;border-bottom:1px solid #e6eaf3;background:#fff;cursor:pointer;transition:background .15s}
+  .gx-opt:last-child{border-bottom:none}
+  .gx-opt:hover{background:#f0f7ff}
+  .gx-opt .ol{font-size:13.5px;font-weight:700;color:#101a2e}
+  .gx-opt .os{display:block;font-size:11.5px;color:#5a6478;font-weight:400;margin-top:2px}
+  .gx-opt .go{color:#0019a5;font-weight:800}
+
+  /* ---- demo modes ---- */
+  .modes{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:44px}
+  @media(max-width:880px){.modes{grid-template-columns:1fr}}
+  .mode{border:1px solid var(--line);border-radius:18px;padding:26px 24px;background:linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0.01))}
+  .mode-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .mode-head h3{font-size:18px;font-weight:800;letter-spacing:-0.01em}
+  .mode-tag{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;font-weight:800;padding:4px 10px;border-radius:20px;background:rgba(0,160,228,0.16);color:#5fc4f2;border:1px solid rgba(0,160,228,0.4)}
+  .mode-tag.voice{background:rgba(38,165,109,0.14);color:#5ecf9a;border-color:rgba(38,165,109,0.45)}
+  .mode p{font-size:13.5px;color:var(--muted);line-height:1.55}
+  .mode-note{margin-top:14px;font-size:12px;color:var(--muted);opacity:.85}
+
+  footer{padding:34px 0}
+  footer .wrap{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="brand"><span class="dot"></span>O2 Upgrades · Agentic POC</div>
+    <div class="navlinks">
+      <a href="#opportunity">The Opportunity</a>
+      <a href="#evidence">What Customers Say</a>
+      <a href="#journey">The Journey</a>
+      <a href="#genui">Generative UI</a>
+      <a href="#demo">Demo</a>
+    </div>
+  </div>
+</nav>
+
+<header>
+  <div class="bubble b1"></div><div class="bubble b2"></div><div class="bubble b3"></div>
+  <div class="wrap">
+    <div class="eyebrow">O2 Upgrades — Agentic Intent POC</div>
+    <h1>Upgrades, handled <span class="thin">in the conversation.</span></h1>
+    <p class="lede">A GECX agent that answers <strong>"am I due an upgrade?"</strong> with the customer's real eligibility, explains their options — Refresh settlement, early upgrade fees, Switch Up — and guides them to checkout. <strong>Guidance only:</strong> the customer places every order themselves.</p>
+    <button class="hero-cta" onclick="openUpgradesChat('chat')">Start the agent →</button>
+  </div>
+</header>
+
+<div class="stats">
+  <div class="stat"><div class="n">267<span class="unit">k</span></div><div class="l">upgrade contacts across the three L3 intents, Mar 25 – May 26</div></div>
+  <div class="stat"><div class="n">&lt;0.1<span class="unit">%</span></div><div class="l">containment on eligibility checks today — 8 contained out of 111,802</div></div>
+  <div class="stat"><div class="n">27.5<span class="unit">k</span></div><div class="l">contacts in September alone — launch season peak</div></div>
+  <div class="stat"><div class="n">75<span class="unit">%</span></div><div class="l">of 'Upgrade'-labelled arrivals are genuine upgrade intent (June 26 sample, n=10,000)</div></div>
+  <div class="stat"><div class="n">~7<span class="unit">%</span></div><div class="l">arrive because the web or app upgrade journey failed them</div></div>
+</div>
+
+<!-- OPPORTUNITY -->
+<section id="opportunity">
+  <div class="wrap">
+    <div class="sec-label">The Opportunity</div>
+    <h2>The most-asked question <span class="thin">is the least answered.</span></h2>
+    <p class="sec-body">"Check upgrade eligibility" is the single biggest upgrade contact driver — <strong>111,802 contacts in 15 months</strong> — and today effectively none of them are contained. Yet eligibility is a bounded, data-driven answer: the API exists, and the response tells us the route, the date, the settlement figure and the fee. It is exactly the kind of question an agent should answer in seconds.</p>
+    <div class="pillars">
+      <div class="pillar"><h4><span class="tag">Answer</span>Eligibility, in-chat</h4><p>The agent checks the customer's real position — eligible now, eligible from a date, settlement to pay, or Switch Up available — and says so plainly, with the figures.</p></div>
+      <div class="pillar"><h4><span class="tag">Explain</span>Options without jargon</h4><p>Refresh unlinking, early upgrade fees, keeping your airtime while changing the phone — explained in plain English, with total costs before any commitment.</p></div>
+      <div class="pillar"><h4><span class="tag">Guide</span>To checkout, never past it</h4><p>The agent walks the customer through the web or app checkout step by step. It never places the order, takes payment or runs the credit check — the customer does.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- EVIDENCE -->
+<section id="evidence">
+  <div class="wrap">
+    <div class="sec-label">What Customers Say</div>
+    <h2>10,000 real arrivals, <span class="thin">categorised.</span></h2>
+    <p class="sec-body">Every conversation AWS labelled <strong>'Upgrade'</strong> over three weeks in June 2026. Three in four are genuine upgrade intent — strong enough to pass the customer's opening message straight to the agent as a running start. The rest is why the agent's first job is to <strong>verify scope from the utterance</strong>, not assume it.</p>
+    <div class="split">
+      <div>
+        <div class="barrow"><span class="cat">Generic "upgrade"</span><span class="track"><span class="fill" style="width:75%"></span></span><span class="pct">37.4%</span></div>
+        <div class="barrow"><span class="cat">Handset upgrade (explicit)</span><span class="track"><span class="fill" style="width:32%"></span></span><span class="pct">15.8%</span></div>
+        <div class="barrow"><span class="cat">Switch Up</span><span class="track"><span class="fill" style="width:17%"></span></span><span class="pct">8.5%</span></div>
+        <div class="barrow"><span class="cat">SIM only upgrade</span><span class="track"><span class="fill" style="width:11.2%"></span></span><span class="pct">5.6%</span></div>
+        <div class="barrow"><span class="cat">Contract renewal framing</span><span class="track"><span class="fill" style="width:8.8%"></span></span><span class="pct">4.4%</span></div>
+        <div class="barrow"><span class="cat">Eligibility (explicit)</span><span class="track"><span class="fill" style="width:3.2%"></span></span><span class="pct">1.6%</span></div>
+        <div class="barrow mis"><span class="cat">SIM swap / eSIM</span><span class="track"><span class="fill" style="width:8.2%"></span></span><span class="pct">4.1%</span></div>
+        <div class="barrow mis"><span class="cat">New line / extra SIM</span><span class="track"><span class="fill" style="width:6.2%"></span></span><span class="pct">3.1%</span></div>
+        <div class="barrow mis"><span class="cat">Other mislabels</span><span class="track"><span class="fill" style="width:8.2%"></span></span><span class="pct">4.1%</span></div>
+        <div class="barrow amb"><span class="cat">Ambiguous / unclear</span><span class="track"><span class="fill" style="width:27.4%"></span></span><span class="pct">13.7%</span></div>
+        <div class="legend">
+          <span><i style="background:var(--blue)"></i>Upgrade intent — in scope (73.6%)</span>
+          <span><i style="background:var(--warn)"></i>Mislabelled (11.3%)</span>
+          <span><i style="background:var(--amber)"></i>Ambiguous (13.7%)</span>
+        </div>
+      </div>
+      <div class="quotes">
+        <div class="quote"><p>"I wish to upgrade but keep my existing tariff, my handset is almost paid off and I want to upgrade just the phone"</p><div class="who">Refresh unlinking — the agent can act on this immediately</div></div>
+        <div class="quote"><p>"I'm looking to upgrade my phone but when I click to do so, it says something went wrong"</p><div class="who">Broken digital journey — 12–13% of handset &amp; Switch Up arrivals</div></div>
+        <div class="quote"><p>"When try upgrade my phone via switch up plan I get this message"</p><div class="who">Switch Up — 8.5% of arrivals, by name</div></div>
+        <div class="quote mis"><p>"Swap eSIM to another iPhone device"</p><div class="who">Mislabel — SIM services, not an upgrade. The agent reroutes on turn one</div></div>
+      </div>
+    </div>
+    <div class="callout">
+      <p><strong>Entry design this leads to:</strong> pass the customer's verbatim opening message into GECX at handoff. 75% of customers get a flying start; the mislabelled 11% are caught faster, because the utterance is exactly the evidence the agent needs to reroute — a confirmation gate would cost every genuine customer a turn and still leave the agent blind. Full analysis in the Intent SOP, §2.3 and §3.3.</p>
+    </div>
+  </div>
+</section>
+
+<!-- JOURNEY -->
+<section id="journey">
+  <div class="wrap">
+    <div class="sec-label">The Journey</div>
+    <h2>Four steps, <span class="thin">one conversation.</span></h2>
+    <p class="sec-body">The agent's backbone, whatever the customer's starting point. Arrive mid-journey — "I want the Pixel" — and it meets you there, checking the earlier steps as it goes.</p>
+    <div class="journey">
+      <div class="jcard"><div class="idx">STEP <b>01</b></div><h3>Check eligibility</h3><p>The customer's real position from the eligibility API: eligible now, a future date, a settlement amount, an early upgrade fee, or a Switch Up swap.</p><span class="chip">Eligibility API</span></div>
+      <div class="jcard"><div class="idx">STEP <b>02</b></div><h3>Explain the options</h3><p>Pay off the device plan, pay the fee, wait, or Switch Up — each with its cost. Refresh unlinking explained when the contract allows it.</p><span class="chip">Costs before commitment</span></div>
+      <div class="jcard"><div class="idx">STEP <b>03</b></div><h3>Choose &amp; compare</h3><p>Current phone against the candidates — price per month, upfront, storage, camera, battery. This is where generative UI earns its place.</p><span class="chip">GenUI comparison</span></div>
+      <div class="jcard"><div class="idx">STEP <b>04</b></div><h3>Guide to checkout</h3><p>Step-by-step through the web or app checkout with verbatim links only. Sign-in, delivery and payment are always the customer's own actions.</p><span class="chip">Guidance only</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- GENUI -->
+<section id="genui">
+  <div class="wrap">
+    <div class="sec-label">Generative UI · A2UI</div>
+    <h2>The agent stops describing <span class="thin">and starts showing.</span></h2>
+    <p class="sec-body">Comparing three phones in prose is a wall of text — worse out loud. With <strong>A2UI</strong>, the agent emits a JSON description of the interface it wants — and this page renders it with components we own, styled to the brand, safe by construction. The agent never generates code; it can only reference components from a catalogue the front end declares. Two client-side function tools carry the whole pattern: <strong>get_a2ui_catalog</strong> tells the agent what this page can render, <strong>use_a2ui_component</strong> renders one instance. <strong>It works in chat and in voice</strong> — a spoken "I've put your options on screen" while the card appears, and a tap on the card becomes the customer's next turn.</p>
+    <div class="play">
+      <div class="play-head">
+        <div class="t">LIVE PLAYGROUND — <span>the same renderer the agent calls</span></div>
+        <div class="play-btns">
+          <button class="play-btn active" id="pb-compare" onclick="playgroundShow('compare')">handset_comparison_card</button>
+          <button class="play-btn" id="pb-options" onclick="playgroundShow('options')">option_selector</button>
+        </div>
+      </div>
+      <div class="play-body">
+        <div class="play-stage" id="playStage" aria-live="polite"></div>
+        <div class="play-json">
+          <div class="jt">component_json — what the agent sends</div>
+          <pre id="playJson"></pre>
+        </div>
+      </div>
+      <div class="play-note"><b>Try it:</b> tap a button on the card. In the live agent, that tap becomes the customer's next message — a confirmed, unambiguous choice instead of "the middle one please". Device data here is illustrative.</div>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO -->
+<section id="demo" style="border-bottom:none">
+  <div class="wrap">
+    <div class="sec-label">Try It</div>
+    <h2>Two channels, <span class="thin">one agent.</span></h2>
+    <p class="sec-body">In the <strong>O2 app</strong>, the POC is voice-first: after the AWS handoff, the customer gets a microphone button — tap to talk, tap again to stop — and the agent replies out loud. On the <strong>web</strong>, the same agent is a chat. Generative UI works in both: in voice, the agent says "I've put the options on your screen" as the card appears.</p>
+
+    <div class="modes">
+      <div class="mode">
+        <div class="mode-head"><span class="mode-tag">Web</span><h3>Chat experience</h3></div>
+        <p>Text in, text out. The seeded starts below are real customer utterances from the June 2026 sample — including one the agent must reroute.</p>
+        <button class="hero-cta" style="margin-top:22px" onclick="openUpgradesChat('chat')">Start the chat agent →</button>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:16px">
+          <button class="alt-cta" onclick="openUpgradesChat('chat','eligibility')">"Hi, am I eligible for an upgrade?" →</button>
+          <button class="alt-cta" onclick="openUpgradesChat('chat','switchup')">"Upgrade my phone using Switch Up" →</button>
+          <button class="alt-cta" onclick="openUpgradesChat('chat','compare')">"Can't decide between the Pixel and the iPhone" →</button>
+          <button class="alt-cta" onclick="openUpgradesChat('chat','broken')">"The website keeps giving me an error" →</button>
+          <button class="alt-cta" onclick="openUpgradesChat('chat','mislabel')">"Swap my eSIM" (reroute test) →</button>
+        </div>
+      </div>
+      <div class="mode">
+        <div class="mode-head"><span class="mode-tag voice">App</span><h3>Voice experience</h3></div>
+        <p>Tap the microphone in the widget to start talking, tap again to stop; the agent answers in voice. Ask it to compare handsets and the comparison card renders on screen mid-conversation — tap a card button and your choice goes back to the agent.</p>
+        <button class="hero-cta" style="margin-top:22px" onclick="openUpgradesChat('voice')">Start the voice agent →</button>
+        <p class="mode-note">Voice needs microphone permission. Switching between chat and voice starts a fresh session.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>Concept microsite · O2 Upgrades — Agentic Intent Framework</span>
+    <span>POC · guidance-only · GenUI via A2UI client functions</span>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* =========================================================================
+   CONFIG — the only block that needs editing to go live.
+   1. deploymentId: CES console → your agent → Channels → Web chat →
+      the full deployment resource name.
+   2. tools: create two Client Function Tools in Agent Studio (schemas in
+      README.md), then paste each tool's full resource name here. The CES
+      console Integration tab shows it pre-filled.
+   Leave a tool id empty and that client function simply isn't registered —
+   the agent falls back to describing things in text.
+   ========================================================================= */
+const CONFIG = {
+  deploymentId: "", // TODO: projects/<project>/locations/eu/apps/<app-id>/deployments/<deployment-id>
+  chatTitle: "O2 Upgrades Agent",
+  tools: {
+    get_a2ui_catalog: "",   // TODO: projects/<project>/locations/eu/apps/<app-id>/tools/<tool-id>
+    use_a2ui_component: ""  // TODO: projects/<project>/locations/eu/apps/<app-id>/tools/<tool-id>
+  }
+};
+
+/* ---- ?qsdebug=1 on-screen logger ------------------------------------------
+   Same diagnostic pattern as the QuickStart microsite: JS errors, promise
+   rejections, failed fetches and ces-messenger events, visible on a phone
+   with no devtools. Also flips on the SDK's own debugger (enable-debugger →
+   window.cesMessengerLogs). */
+const qsDebugOn = new URLSearchParams(location.search).has('qsdebug');
+let qsDebugEl = null;
+function qsLog(msg) {
+  if (!qsDebugOn) return;
+  if (!qsDebugEl) {
+    qsDebugEl = document.createElement('div');
+    qsDebugEl.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:99999;background:#000;color:#0f0;font:11px monospace;padding:8px;border-radius:6px;max-height:35vh;overflow:auto;white-space:pre-wrap';
+    document.body.appendChild(qsDebugEl);
+  }
+  qsDebugEl.textContent += msg + '\n';
+  qsDebugEl.scrollTop = qsDebugEl.scrollHeight;
+}
+if (qsDebugOn) {
+  window.addEventListener('error', e => qsLog('JS error: ' + e.message));
+  window.addEventListener('unhandledrejection', e => qsLog('Promise rejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason)));
+  const qsOrigFetch = window.fetch;
+  window.fetch = function (...args) {
+    return qsOrigFetch.apply(this, args).then(res => {
+      if (!res.ok) {
+        const url = args[0] && args[0].url ? args[0].url : args[0];
+        res.clone().text().then(body => {
+          qsLog('Fetch ' + res.status + ': ' + url + '\nBody: ' + String(body).slice(0, 500));
+        }).catch(() => qsLog('Fetch ' + res.status + ': ' + url + ' (no body)'));
+      }
+      return res;
+    }).catch(err => {
+      qsLog('Fetch failed: ' + (args[0] && args[0].url ? args[0].url : args[0]) + ' — ' + err.message);
+      throw err;
+    });
+  };
+  ['ces-messenger-loaded','ces-messenger-connected','ces-messenger-disconnected']
+    .forEach(evt => window.addEventListener(evt, e => qsLog(evt + (e.detail ? ': ' + JSON.stringify(e.detail) : ''))));
+}
+
+/* ---- toast ---- */
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('on'), 3200);
+}
+
+/* =========================================================================
+   A2UI — catalogue + renderer.
+   POC approach (deliberate): two named composite components with fixed JSON
+   schemas, rendered by hand-rolled JS. The official A2UI renderer package is
+   a separate spike (see the A2UI overview doc); this bespoke path proves the
+   contract — agent sends JSON, page renders owned components — with zero
+   dependencies. The SAME renderComponent() serves the in-page playground and
+   the agent's use_a2ui_component tool, so what you see in the playground is
+   exactly what the agent produces in the transcript.
+   ========================================================================= */
+const A2UI_CATALOG = {
+  version: "poc-1",
+  components: [
+    {
+      name: "handset_comparison_card",
+      description: "Side-by-side comparison of 2-3 handsets. Use when the customer is choosing between specific devices. Every device MUST include an action so the customer can choose by tapping.",
+      schema: {
+        title: "string — card heading, e.g. 'Your upgrade options'",
+        devices: [{
+          name: "string — device display name",
+          pricePerMonth: "string — e.g. '£32.99/mo'",
+          upfront: "string — e.g. '£30 upfront'",
+          storage: "string — e.g. '256GB'",
+          camera: "string — short spec",
+          battery: "string — short spec",
+          screen: "string — short spec",
+          action: { name: "string — tool-visible action id, e.g. choose_device", value: "string — machine value", label: "string — button text, e.g. 'Choose this one'" }
+        }]
+      }
+    },
+    {
+      name: "option_selector",
+      description: "A short list of tappable options for one question. Use for bounded choices (upgrade routes, storage sizes, yes/no with nuance) instead of asking the customer to type.",
+      schema: {
+        question: "string — the question being answered",
+        options: [{
+          label: "string — main text",
+          sublabel: "string (optional) — one supporting line",
+          value: "string — machine value",
+          name: "string — action id, e.g. choose_route"
+        }]
+      }
+    }
+  ]
+};
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* Renders a catalogue component to an HTML string. Interactions call
+   window.__gxAction(name, value, label) — wired below to either the
+   playground toast or the live chat sessionInput. Returns null for an
+   unknown component so the caller can report a clean error to the agent. */
+function renderComponent(name, json) {
+  if (name === "handset_comparison_card") {
+    const devices = Array.isArray(json.devices) ? json.devices.slice(0, 3) : [];
+    if (!devices.length) return null;
+    const cols = devices.map(d => {
+      const act = d.action || {};
+      return `<div class="gx-dev">
+        <div class="gx-phone"></div>
+        <div class="nm">${esc(d.name)}</div>
+        <div class="pr">${esc(d.pricePerMonth)}<small>${esc(d.upfront)}</small></div>
+        <div class="gx-spec"><span>Storage</span><b>${esc(d.storage)}</b></div>
+        <div class="gx-spec"><span>Camera</span><b>${esc(d.camera)}</b></div>
+        <div class="gx-spec"><span>Battery</span><b>${esc(d.battery)}</b></div>
+        <div class="gx-spec"><span>Screen</span><b>${esc(d.screen)}</b></div>
+        <button class="gx-btn" onclick="__gxAction('${esc(act.name)}','${esc(act.value)}','${esc(d.name)}')">${esc(act.label || "Choose")}</button>
+      </div>`;
+    }).join("");
+    return `<div class="gx-card"><div class="gx-head">${esc(json.title || "Compare handsets")}</div>
+      <div class="gx-devices ${devices.length === 3 ? "three" : ""}">${cols}</div></div>`;
+  }
+  if (name === "option_selector") {
+    const options = Array.isArray(json.options) ? json.options.slice(0, 6) : [];
+    if (!options.length) return null;
+    const rows = options.map(o =>
+      `<button class="gx-opt" onclick="__gxAction('${esc(o.name)}','${esc(o.value)}','${esc(o.label)}')">
+         <span><span class="ol">${esc(o.label)}</span>${o.sublabel ? `<span class="os">${esc(o.sublabel)}</span>` : ""}</span>
+         <span class="go">→</span>
+       </button>`).join("");
+    return `<div class="gx-card"><div class="gx-head">${esc(json.question || "Choose an option")}</div>
+      <div class="gx-opts">${rows}</div></div>`;
+  }
+  return null;
+}
+
+/* =========================================================================
+   Playground — same renderer, sample payloads, no agent needed.
+   ========================================================================= */
+const SAMPLES = {
+  compare: {
+    name: "handset_comparison_card",
+    json: {
+      title: "Your upgrade options — from £30 upfront",
+      devices: [
+        { name: "Pixel 10", pricePerMonth: "£29.99/mo", upfront: "£30 upfront", storage: "128GB",
+          camera: "50MP dual", battery: "24h+", screen: "6.2\" OLED",
+          action: { name: "choose_device", value: "pixel_10_128", label: "Choose Pixel" } },
+        { name: "iPhone 17", pricePerMonth: "£36.99/mo", upfront: "£30 upfront", storage: "256GB",
+          camera: "48MP dual", battery: "26h", screen: "6.3\" OLED",
+          action: { name: "choose_device", value: "iphone_17_256", label: "Choose iPhone" } }
+      ]
+    }
+  },
+  options: {
+    name: "option_selector",
+    json: {
+      question: "You're mid-contract — how would you like to upgrade?",
+      options: [
+        { label: "Pay off my device plan (£142.50)", sublabel: "Settle what's left, then upgrade today", value: "settle_and_upgrade", name: "choose_route" },
+        { label: "Use O2 Switch Up", sublabel: "Trade in this phone and swap — your plan allows it", value: "switch_up", name: "choose_route" },
+        { label: "Wait until 14 September", sublabel: "Your fee-free upgrade date", value: "wait_for_date", name: "choose_route" }
+      ]
+    }
+  }
+};
+
+let playgroundMode = true; // true → card taps hit the toast, not the chat
+
+function playgroundShow(kind) {
+  const s = SAMPLES[kind];
+  playgroundMode = true;
+  document.getElementById('playStage').innerHTML = renderComponent(s.name, s.json);
+  document.getElementById('playJson').textContent = JSON.stringify({ component_name: s.name, component_json: s.json }, null, 2);
+  document.getElementById('pb-compare').classList.toggle('active', kind === 'compare');
+  document.getElementById('pb-options').classList.toggle('active', kind === 'options');
+}
+
+/* Card interactions. Playground → explanatory toast. Live chat → the tap
+   becomes the customer's next message (fire-and-forget pattern: the tool
+   already returned RENDERED; the choice travels as a normal user turn, so
+   there is no held tool response to time out). */
+function __gxAction(name, value, label) {
+  const confirmed = `I'd like to go with: ${label}`;
+  if (!playgroundMode && cesm) {
+    try {
+      cesm.sessionInput(confirmed);
+      toast(`Sent to the agent: "${confirmed}"`);
+    } catch (e) {
+      qsLog('sessionInput failed: ' + e.message);
+      toast('Could not send the choice — type it in the chat instead.');
+    }
+    return;
+  }
+  toast(`action → ${name}: ${value} · in the live agent this is sent as your reply`);
+}
+
+/* =========================================================================
+   Chat — lazy ces-messenger creation, dual modality, client functions, seeds.
+   No session is opened on page load; the element is created (and the token
+   broker first contacted) only when a visitor clicks a start button.
+
+   MODALITY. The POC channels differ only in widget audio configuration —
+   same deployment, same agent, same GenUI tools:
+   · chat  (web POC): audio fully off. audio-input-mode NONE is deliberate —
+     DEFAULT_OFF only hides the mic button while the widget still opens the
+     persistent bidirectional audio stream upstream. NONE keeps web sessions
+     plain HTTPS text.
+   · voice (app POC): the bidi stream IS the transport, so it's wanted here.
+     DEFAULT_OFF gives the tap-to-toggle mic the app design calls for (tap to
+     talk, tap again to stop) without an open mic on connect; audio-output
+     DEFAULT_ON makes the agent reply out loud. GenUI still renders in the
+     transcript, and card taps still travel as user turns.
+   ========================================================================= */
+const MODES = {
+  chat: {
+    'audio-input-mode': 'NONE',
+    'audio-output-mode': 'DISABLED'
+  },
+  voice: {
+    'audio-input-mode': 'DEFAULT_OFF',
+    'audio-output-mode': 'DEFAULT_ON'
+    // Voice selection ('voice' attribute) intentionally left at the widget
+    // default for now — choosing a UK English voice is Pending.
+  }
+};
+
+let cesm = null;         // the <ces-messenger> element once created
+let currentMode = null;  // 'chat' | 'voice'
+let cesConnected = false;
+let pendingSeed = null;  // opening utterance queued until connected
+
+/* Real utterances from the June 2026 sample (near-verbatim), chosen to drop
+   the demo into specific SOP scenarios — including a mislabel reroute. */
+const SEEDS = {
+  eligibility: "Hi, am I eligible for an upgrade?",
+  switchup: "I'd like to upgrade my phone using O2 Switch Up",
+  compare: "I can't decide between the Pixel and the iPhone — can you compare them for my upgrade?",
+  broken: "I was trying to upgrade my phone but the website keeps taking me to an error screen.",
+  mislabel: "Swap my eSIM to my new phone"
+};
+
+function buildMessenger(mode) {
+  const el = document.createElement('ces-messenger');
+  el.setAttribute('deployment-id', CONFIG.deploymentId);
+  el.setAttribute('chat-title', CONFIG.chatTitle + (mode === 'voice' ? ' (voice)' : ''));
+  el.setAttribute('token-broker-url', 'MANAGED');
+  el.setAttribute('language-code', 'en-GB');
+  el.setAttribute('theme-id', 'light');
+  el.setAttribute('disable-bubble', 'true');
+  el.setAttribute('disable-image-uploads', 'true');
+  const audio = MODES[mode] || MODES.chat;
+  Object.entries(audio).forEach(([k, v]) => el.setAttribute(k, v));
+  if (qsDebugOn) el.setAttribute('enable-debugger', 'true');
+  document.body.appendChild(el);
+  return el;
+}
+
+function registerA2uiTools() {
+  /* get_a2ui_catalog — the agent's first GenUI call each session. Returns
+     the component names, when to use them, and their JSON schemas. */
+  if (CONFIG.tools.get_a2ui_catalog) {
+    cesm.registerClientSideFunction(
+      { toolName: CONFIG.tools.get_a2ui_catalog, toolDisplayName: 'get_a2ui_catalog' },
+      () => {
+        qsLog('tool: get_a2ui_catalog');
+        return Promise.resolve({ status: "OK", catalog: A2UI_CATALOG });
+      }
+    );
+  }
+  /* use_a2ui_component — validates the name, renders into the transcript via
+     insertMessage, and returns immediately (fire-and-forget). The customer's
+     tap arrives as their next message via __gxAction → sessionInput. Works
+     identically in chat and voice sessions. */
+  if (CONFIG.tools.use_a2ui_component) {
+    cesm.registerClientSideFunction(
+      { toolName: CONFIG.tools.use_a2ui_component, toolDisplayName: 'use_a2ui_component' },
+      (args) => {
+        qsLog('tool: use_a2ui_component → ' + (args && args.component_name));
+        let json = args && args.component_json;
+        if (typeof json === 'string') { try { json = JSON.parse(json); } catch (e) { json = null; } }
+        const html = json && renderComponent(args.component_name, json);
+        if (!html) {
+          return Promise.resolve({ status: "ERROR", message: "Unknown component or invalid component_json. Call get_a2ui_catalog for the available components and schemas, or continue in text." });
+        }
+        playgroundMode = false; // taps now go to the live session
+        cesm.insertMessage('BOT', { payload: { html } });
+        return Promise.resolve({ status: "RENDERED", note: "Component displayed. The customer's selection, if any, will arrive as their next message." });
+      }
+    );
+  }
+}
+
+function openUpgradesChat(mode, seedKey) {
+  if (!CONFIG.deploymentId) {
+    toast('No agent connected yet — set CONFIG.deploymentId in index.html (see README).');
+    return;
+  }
+  mode = mode || 'chat';
+  pendingSeed = seedKey ? SEEDS[seedKey] : null;
+
+  /* Same mode, element exists → just open (and seed if connected). */
+  if (cesm && currentMode === mode) {
+    cesm.open();
+    if (pendingSeed && cesConnected) { cesm.sessionInput(pendingSeed); pendingSeed = null; }
+    return;
+  }
+
+  /* Mode switch → tear down and start a fresh session in the new mode
+     (audio attributes are read at element initialisation). */
+  if (cesm && currentMode !== mode) {
+    try { cesm.close(); } catch (e) { /* already closed */ }
+    cesm.remove();
+    cesm = null;
+    cesConnected = false;
+    toast(mode === 'voice' ? 'Switching to the voice demo — new session' : 'Switching to the chat demo — new session');
+  }
+
+  window.addEventListener('ces-messenger-loaded', () => {
+    registerA2uiTools();
+    cesm.open();
+  }, { once: true });
+
+  currentMode = mode;
+  cesm = buildMessenger(mode);
+}
+
+/* Connection state — registered once; survives mode-switch teardowns. */
+window.addEventListener('ces-messenger-connected', () => {
+  cesConnected = true;
+  if (pendingSeed && cesm) { cesm.sessionInput(pendingSeed); pendingSeed = null; }
+});
+window.addEventListener('ces-messenger-disconnected', () => { cesConnected = false; });
+
+/* ---- init ---- */
+document.addEventListener('DOMContentLoaded', () => playgroundShow('compare'));
+</script>
+</body>
+</html>

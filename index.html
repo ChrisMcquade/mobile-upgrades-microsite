@@ -436,6 +436,52 @@ use_a2ui_component: "projects/788788042356/locations/eu/apps/d04fc787-748b-4b68-
   }
 };
 
+     const GX_CSS = `
+.gx-card{width:100%;max-width:430px;border:1px solid rgba(0,160,228,0.35);border-radius:16px;background:#fff;color:#101a2e;overflow:hidden;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif}
+.gx-card .gx-head{padding:13px 16px;background:linear-gradient(90deg,#0019a5,#0060c0);color:#fff;font-size:13.5px;font-weight:700}
+.gx-devices{display:grid;grid-template-columns:repeat(2,1fr)}
+.gx-devices.three{grid-template-columns:repeat(3,1fr)}
+.gx-dev{padding:14px 12px 16px;border-right:1px solid #e6eaf3;display:flex;flex-direction:column;gap:7px}
+.gx-dev:last-child{border-right:none}
+.gx-phone{width:44px;height:78px;border-radius:9px;border:2px solid #0019a5;position:relative;margin:2px auto 6px;background:linear-gradient(160deg,#eaf4ff,#cfe6ff)}
+.gx-phone::after{content:"";position:absolute;top:5px;left:50%;transform:translateX(-50%);width:14px;height:3px;border-radius:2px;background:#0019a5;opacity:.5}
+.gx-dev .nm{font-size:13px;font-weight:800;text-align:center;line-height:1.2}
+.gx-dev .pr{font-size:12px;text-align:center;color:#0019a5;font-weight:700}
+.gx-dev .pr small{display:block;color:#5a6478;font-weight:400}
+.gx-spec{font-size:11px;color:#4c5872;display:flex;justify-content:space-between;gap:8px;border-top:1px dashed #e6eaf3;padding-top:5px}
+.gx-spec b{color:#101a2e;font-weight:600;text-align:right}
+.gx-btn{margin-top:auto;font-size:12px;font-weight:700;padding:8px 10px;border-radius:22px;border:none;cursor:pointer;background:#0019a5;color:#fff;transition:background .2s}
+.gx-btn:hover{background:#0060c0}
+.gx-opts{padding:6px 0}
+.gx-opt{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;text-align:left;padding:13px 16px;border:none;border-bottom:1px solid #e6eaf3;background:#fff;cursor:pointer;transition:background .15s}
+.gx-opt:last-child{border-bottom:none}
+.gx-opt:hover{background:#f0f7ff}
+.gx-opt .ol{font-size:13.5px;font-weight:700;color:#101a2e}
+.gx-opt .os{display:block;font-size:11.5px;color:#5a6478;font-weight:400;margin-top:2px}
+.gx-opt .go{color:#0019a5;font-weight:800}
+.gx-elig,.gx-prod,.gx-sum{padding:14px 16px 16px;display:flex;flex-direction:column;gap:9px}
+.gx-elig-row{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:#4c5872;font-weight:600}
+.gx-badge{font-size:10.5px;font-weight:800;padding:3px 10px;border-radius:20px;background:#eef1f7;color:#5a6478}
+.gx-badge.on{background:#e3f4ec;color:#1f8a5b}
+.gx-amount{font-size:22px;font-weight:800;color:#101a2e;letter-spacing:-0.01em}
+.gx-track{height:10px;border-radius:6px;background:#e6eaf3;overflow:hidden}
+.gx-fill{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#0019a5,#00a0e4)}
+.gx-pct{font-size:11.5px;color:#5a6478}
+.gx-detail{font-size:12px;color:#4c5872;border-top:1px dashed #e6eaf3;padding-top:8px}
+.gx-actions{display:flex;gap:8px;margin-top:4px}
+.gx-actions .gx-btn{flex:1}
+.gx-btn.ghost{background:#fff;color:#0019a5;border:1.5px solid #0019a5}
+.gx-btn.ghost:hover{background:#f0f7ff}
+.gx-prod-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.gx-prod-top .nm{font-size:15px;font-weight:800;color:#101a2e}
+.gx-price{font-size:13px;font-weight:800;color:#0019a5;white-space:nowrap}
+.gx-desc{font-size:12.5px;color:#4c5872;line-height:1.5;margin:0}
+.gx-sum-row{display:flex;justify-content:space-between;gap:14px;font-size:12.5px;color:#4c5872;border-bottom:1px solid #eef1f7;padding-bottom:7px}
+.gx-sum-row b{color:#101a2e;font-weight:600;text-align:right}
+.gx-sum-row.total{border-bottom:none;border-top:2px solid #0019a5;padding-top:9px;font-weight:800}
+.gx-sum-row.total b{color:#0019a5;font-weight:800}
+`;
+
 /* ---- ?qsdebug=1 on-screen logger ------------------------------------------
    Same diagnostic pattern as the QuickStart microsite: JS errors, promise
    rejections, failed fetches and ces-messenger events, visible on a phone
@@ -878,7 +924,7 @@ function registerA2uiTools() {
     }
   );
   
-  /* use_a2ui_component */
+ /* use_a2ui_component */
   cesm.registerClientSideFunction(
     { toolName: CONFIG.tools.use_a2ui_component, toolDisplayName: 'use_a2ui_component' },
     (args) => {
@@ -886,11 +932,14 @@ function registerA2uiTools() {
       let json = args && args.component_json;
       if (typeof json === 'string') { try { json = JSON.parse(json); } catch (e) { json = null; } }
       
-      const html = json && renderComponent(args.component_name, json);
+      let html = json && renderComponent(args.component_name, json);
       
       if (!html) {
         return Promise.resolve({ status: "ERROR", message: "Unknown component or invalid component_json." });
       }
+      
+      // Inject the styling explicitly into the payload for the Shadow DOM
+      html = `<style>${GX_CSS}</style>` + html;
       
       playgroundMode = false;
       cesm.insertMessage('BOT', { payload: { html } });
@@ -926,9 +975,19 @@ function openUpgradesChat(mode, seedKey) {
   }
 
   window.addEventListener('ces-messenger-loaded', () => {
-    registerA2uiTools();
-    cesm.open();
-  }, { once: true });
+  registerA2uiTools();
+  
+  // Pierce the Shadow DOM to force the font globally across the entire widget
+  if (cesm && cesm.shadowRoot) {
+    const rootStyle = document.createElement('style');
+    rootStyle.innerHTML = `
+      * { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important; }
+    `;
+    cesm.shadowRoot.appendChild(rootStyle);
+  }
+  
+  cesm.open();
+}, { once: true });
 
   currentMode = mode;
   cesm = buildMessenger(mode);

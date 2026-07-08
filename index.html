@@ -846,9 +846,24 @@ function buildMessenger(mode) {
   el.setAttribute('theme-id', 'light');
   el.setAttribute('disable-bubble', 'true');
   el.setAttribute('disable-image-uploads', 'true');
+  
   const audio = MODES[mode] || MODES.chat;
   Object.entries(audio).forEach(([k, v]) => el.setAttribute(k, v));
   if (qsDebugOn) el.setAttribute('enable-debugger', 'true');
+
+  // Force styling variables directly on the element to pierce the Shadow DOM
+  const fontStr = '"Helvetica Neue", Helvetica, Arial, sans-serif';
+  el.style.setProperty('--df-messenger-font-family', fontStr);
+  el.style.setProperty('--ces-messenger-font-family', fontStr);
+  
+  // O2 Brand Colors
+  el.style.setProperty('--df-messenger-chat-background-color', '#f4f6fb');
+  el.style.setProperty('--df-messenger-message-user-background', '#0019a5'); // O2 Blue
+  el.style.setProperty('--df-messenger-message-user-font-color', '#ffffff');
+  el.style.setProperty('--df-messenger-message-bot-background', '#ffffff');
+  el.style.setProperty('--df-messenger-button-titlebar-background', '#04060f'); // O2 Ink
+  el.style.setProperty('--df-messenger-button-titlebar-font-color', '#ffffff');
+
   document.body.appendChild(el);
   return el;
 }

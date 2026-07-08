@@ -431,8 +431,8 @@ const CONFIG = {
   deploymentId: "projects/788788042356/locations/eu/apps/d04fc787-748b-4b68-b086-1bd9b307187b/deployments/081c889e-0429-4a08-aefb-789dec2296f4",
   chatTitle: "O2 Upgrades Agent",
   tools: {
-    get_a2ui_catalog: "projects/prj-vo-digital-s-jim-d/locations/eu/apps/d04fc787-748b-4b68-b086-1bd9b307187b/tools/a9524691-ca45-434b-b902-d3b654f87904", 
-    use_a2ui_component: "projects/prj-vo-digital-s-jim-d/locations/eu/apps/d04fc787-748b-4b68-b086-1bd9b307187b/tools/93c95e90-cc7d-4af5-9034-59e274f800c7"
+get_a2ui_catalog: "projects/788788042356/locations/eu/apps/d04fc787-748b-4b68-b086-1bd9b307187b/tools/a9524691-ca45-434b-b902-d3b654f87904",
+use_a2ui_component: "projects/788788042356/locations/eu/apps/d04fc787-748b-4b68-b086-1bd9b307187b/tools/93c95e90-cc7d-4af5-9034-59e274f800c7"
   }
 };
 
@@ -871,7 +871,7 @@ function buildMessenger(mode) {
 function registerA2uiTools() {
   /* get_a2ui_catalog */
   cesm.registerClientSideFunction(
-    'get_a2ui_catalog', // Use the plain displayName string
+    { toolName: CONFIG.tools.get_a2ui_catalog, toolDisplayName: 'get_a2ui_catalog' },
     (args) => {
       qsLog('tool: get_a2ui_catalog');
       return Promise.resolve({ status: "OK", catalog: A2UI_CATALOG });
@@ -880,7 +880,7 @@ function registerA2uiTools() {
   
   /* use_a2ui_component */
   cesm.registerClientSideFunction(
-    'use_a2ui_component', // Use the plain displayName string
+    { toolName: CONFIG.tools.use_a2ui_component, toolDisplayName: 'use_a2ui_component' },
     (args) => {
       qsLog('tool: use_a2ui_component → ' + (args && args.component_name));
       let json = args && args.component_json;
@@ -895,7 +895,6 @@ function registerA2uiTools() {
       playgroundMode = false;
       cesm.insertMessage('BOT', { payload: { html } });
       
-      // Must return a response so the agent knows the tool succeeded
       return Promise.resolve({ status: "RENDERED", note: "Component displayed." });
     }
   );

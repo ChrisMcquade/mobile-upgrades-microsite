@@ -13,7 +13,7 @@ The GenUI **playground works immediately with no agent connected** — it uses t
 
 ## Connect the agent
 
-Build the demo agent first — the full walkthrough (agent settings, paste-ready instruction, all four tool definitions with schemas and mock Python code, channel setup, demo script) is in **`O2_Upgrades_Demo_Agent_Build_Booklet_v0_1.docx`**.
+Build the demo agent first — the full walkthrough (agent settings, paste-ready instruction, all seven tool definitions with schemas and mock Python code, channel setup, demo script) is in **`O2_Upgrades_Demo_Agent_Build_Booklet_v0_2.docx`**.
 
 Then fill the `CONFIG` block at the top of the script in `index.html`:
 
@@ -56,7 +56,7 @@ Two client function tools carry the pattern:
 
 **Fire-and-forget by design**: the tool never holds its response open waiting for a tap — a card tap calls `sessionInput()` and arrives as the customer's next message ("I'd like to go with: Pixel 10"), so nothing can time out. Works identically in chat and voice sessions.
 
-Components (POC set of two): `handset_comparison_card` (2–3 devices, every device carries an action) and `option_selector` (one question, 2–4 tappable options). Bespoke hand-rolled renderer — evaluating the official A2UI renderer is a separate spike per the A2UI overview doc.
+Components (POC set of six, mapping to the journey stages in Intent SOP v0.3): `line_selector` (which phone on a multi-line account), `eligibility_card` (amount left, % paid-off progress bar, Switch Up badge, proceed choice), `product_card` (one device/extra/insurance option/add-on/accessory with accept-or-skip), `handset_comparison_card` (2–3 devices side by side), `option_selector` (one bounded question), `order_summary` (everything selected, confirmed before the basket link). Bespoke hand-rolled renderer — evaluating the official A2UI renderer is a separate spike per the A2UI overview doc.
 
 ## Diagnostics
 

@@ -193,6 +193,27 @@
   .gx-opt .ol{font-size:13.5px;font-weight:700;color:#101a2e}
   .gx-opt .os{display:block;font-size:11.5px;color:#5a6478;font-weight:400;margin-top:2px}
   .gx-opt .go{color:#0019a5;font-weight:800}
+  .gx-elig,.gx-prod,.gx-sum{padding:14px 16px 16px;display:flex;flex-direction:column;gap:9px}
+  .gx-elig-row{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:#4c5872;font-weight:600}
+  .gx-badge{font-size:10.5px;font-weight:800;padding:3px 10px;border-radius:20px;background:#eef1f7;color:#5a6478}
+  .gx-badge.on{background:#e3f4ec;color:#1f8a5b}
+  .gx-amount{font-size:22px;font-weight:800;color:#101a2e;letter-spacing:-0.01em}
+  .gx-track{height:10px;border-radius:6px;background:#e6eaf3;overflow:hidden}
+  .gx-fill{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#0019a5,#00a0e4)}
+  .gx-pct{font-size:11.5px;color:#5a6478}
+  .gx-detail{font-size:12px;color:#4c5872;border-top:1px dashed #e6eaf3;padding-top:8px}
+  .gx-actions{display:flex;gap:8px;margin-top:4px}
+  .gx-actions .gx-btn{flex:1}
+  .gx-btn.ghost{background:#fff;color:#0019a5;border:1.5px solid #0019a5}
+  .gx-btn.ghost:hover{background:#f0f7ff}
+  .gx-prod-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .gx-prod-top .nm{font-size:15px;font-weight:800;color:#101a2e}
+  .gx-price{font-size:13px;font-weight:800;color:#0019a5;white-space:nowrap}
+  .gx-desc{font-size:12.5px;color:#4c5872;line-height:1.5;margin:0}
+  .gx-sum-row{display:flex;justify-content:space-between;gap:14px;font-size:12.5px;color:#4c5872;border-bottom:1px solid #eef1f7;padding-bottom:7px}
+  .gx-sum-row b{color:#101a2e;font-weight:600;text-align:right}
+  .gx-sum-row.total{border-bottom:none;border-top:2px solid #0019a5;padding-top:9px;font-weight:800}
+  .gx-sum-row.total b{color:#0019a5;font-weight:800}
 
   /* ---- demo modes ---- */
   .modes{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:44px}
@@ -300,10 +321,10 @@
     <h2>Four steps, <span class="thin">one conversation.</span></h2>
     <p class="sec-body">The agent's backbone, whatever the customer's starting point. Arrive mid-journey — "I want the Pixel" — and it meets you there, checking the earlier steps as it goes.</p>
     <div class="journey">
-      <div class="jcard"><div class="idx">STEP <b>01</b></div><h3>Check eligibility</h3><p>The customer's real position from the eligibility API: eligible now, a future date, a settlement amount, an early upgrade fee, or a Switch Up swap.</p><span class="chip">Eligibility API</span></div>
-      <div class="jcard"><div class="idx">STEP <b>02</b></div><h3>Explain the options</h3><p>Pay off the device plan, pay the fee, wait, or Switch Up — each with its cost. Refresh unlinking explained when the contract allows it.</p><span class="chip">Costs before commitment</span></div>
-      <div class="jcard"><div class="idx">STEP <b>03</b></div><h3>Choose &amp; compare</h3><p>Current phone against the candidates — price per month, upfront, storage, camera, battery. This is where generative UI earns its place.</p><span class="chip">GenUI comparison</span></div>
-      <div class="jcard"><div class="idx">STEP <b>04</b></div><h3>Guide to checkout</h3><p>Step-by-step through the web or app checkout with verbatim links only. Sign-in, delivery and payment are always the customer's own actions.</p><span class="chip">Guidance only</span></div>
+      <div class="jcard"><div class="idx">STEP <b>01</b></div><h3>Identify the line, check eligibility</h3><p>Multi-line accounts pick which phone first — every API is keyed on the number. Then the real position: eligible now, a date, a settlement, or Switch Up.</p><span class="chip">Line selector + eligibility card</span></div>
+      <div class="jcard"><div class="idx">STEP <b>02</b></div><h3>Choose the phone</h3><p>Step-by-step showcase or a side-by-side of two candidates, down to the exact variant — capacity, colour, and stock as the catalogue reports it.</p><span class="chip">GenUI comparison</span></div>
+      <div class="jcard"><div class="idx">STEP <b>03</b></div><h3>Configure the package</h3><p>Tariff, extras, insurance, Switch Up, O2 Satellite, accessories — one card at a time, described accurately, nothing added silently.</p><span class="chip">Card-by-card configuration</span></div>
+      <div class="jcard"><div class="idx">STEP <b>04</b></div><h3>Basket &amp; checkout guidance</h3><p>A summary to confirm, then a basket link that exactly matches it — built by a tool, sent verbatim. The customer adds their IMEI and any promo code, and completes every checkout step themselves.</p><span class="chip">Guidance only</span></div>
     </div>
   </div>
 </section>
@@ -318,8 +339,12 @@
       <div class="play-head">
         <div class="t">LIVE PLAYGROUND — <span>the same renderer the agent calls</span></div>
         <div class="play-btns">
-          <button class="play-btn active" id="pb-compare" onclick="playgroundShow('compare')">handset_comparison_card</button>
-          <button class="play-btn" id="pb-options" onclick="playgroundShow('options')">option_selector</button>
+          <button class="play-btn" data-kind="line" onclick="playgroundShow('line')">line_selector</button>
+          <button class="play-btn active" data-kind="eligibility" onclick="playgroundShow('eligibility')">eligibility_card</button>
+          <button class="play-btn" data-kind="compare" onclick="playgroundShow('compare')">comparison</button>
+          <button class="play-btn" data-kind="product" onclick="playgroundShow('product')">product_card</button>
+          <button class="play-btn" data-kind="options" onclick="playgroundShow('options')">option_selector</button>
+          <button class="play-btn" data-kind="summary" onclick="playgroundShow('summary')">order_summary</button>
         </div>
       </div>
       <div class="play-body">
@@ -453,8 +478,46 @@ function toast(msg) {
    exactly what the agent produces in the transcript.
    ========================================================================= */
 const A2UI_CATALOG = {
-  version: "poc-1",
+  version: "poc-2",
   components: [
+    {
+      name: "line_selector",
+      description: "One card per line on the account (device + phone number) so the customer picks which phone they are upgrading. Use FIRST on multi-line accounts, before any eligibility check. Never use for single-line accounts.",
+      schema: {
+        question: "string — e.g. 'Which phone are you upgrading?'",
+        lines: [{
+          device: "string — device on the line, e.g. 'iPhone 15'",
+          number: "string — display number, e.g. '07700 900201'",
+          value: "string — machine value, e.g. line ref",
+          name: "string — action id, e.g. choose_line"
+        }]
+      }
+    },
+    {
+      name: "eligibility_card",
+      description: "The customer's upgrade position after the eligibility check: amount left to pay, percentage of the current phone already paid off (progress bar), whether Switch Up is held, and proceed/not-now buttons.",
+      schema: {
+        title: "string — e.g. 'Your upgrade position'",
+        device: "string — current phone",
+        amount_left: "string — e.g. '£142.50 left to pay' or '£0 — paid off'",
+        percent_paid: "number 0-100 — % of the device plan already paid",
+        switch_up: "boolean — whether the customer holds O2 Switch Up",
+        detail: "string (optional) — one supporting line, e.g. fee-free date",
+        actions: [{ name: "string — e.g. eligibility_decision", value: "string", label: "string — e.g. 'Upgrade this phone'" }]
+      }
+    },
+    {
+      name: "product_card",
+      description: "A single item with a short description and accept/skip choice: one device in a step-by-step showcase, an extra, an insurance option, the Switch Up or Satellite add-on, or an accessory. Use one per turn during configuration.",
+      schema: {
+        title: "string — stage heading, e.g. 'Insurance — option 1 of 3'",
+        name: "string — the item, e.g. 'Damage cover'",
+        price: "string — e.g. '£7.00/mo' or '£39.00'",
+        description: "string — accurate 1-2 line description from tool data",
+        specs: [{ label: "string", value: "string" }],
+        actions: [{ name: "string — e.g. choose_insurance", value: "string", label: "string — e.g. 'Add this' / 'Skip'" }]
+      }
+    },
     {
       name: "handset_comparison_card",
       description: "Side-by-side comparison of 2-3 handsets. Use when the customer is choosing between specific devices. Every device MUST include an action so the customer can choose by tapping.",
@@ -474,7 +537,7 @@ const A2UI_CATALOG = {
     },
     {
       name: "option_selector",
-      description: "A short list of tappable options for one question. Use for bounded choices (upgrade routes, storage sizes, yes/no with nuance) instead of asking the customer to type.",
+      description: "A short list of tappable options for one question. Use for bounded choices (upgrade routes, storage sizes, tariffs) instead of asking the customer to type.",
       schema: {
         question: "string — the question being answered",
         options: [{
@@ -483,6 +546,16 @@ const A2UI_CATALOG = {
           value: "string — machine value",
           name: "string — action id, e.g. choose_route"
         }]
+      }
+    },
+    {
+      name: "order_summary",
+      description: "The overall view of everything selected (device, variant, tariff, add-ons, accessories, cost shape) shown for confirmation BEFORE the basket link is sent.",
+      schema: {
+        title: "string — e.g. 'Your upgrade — ready for the basket'",
+        items: [{ label: "string — e.g. 'Device'", value: "string — e.g. 'Pixel 10, 256GB, Obsidian'" }],
+        total: "string (optional) — e.g. '£52.99/mo + £30 upfront'",
+        action: { name: "string — e.g. confirm_summary", value: "string", label: "string — e.g. 'Looks right — build my basket'" }
       }
     }
   ]
@@ -497,6 +570,57 @@ function esc(s) {
    playground toast or the live chat sessionInput. Returns null for an
    unknown component so the caller can report a clean error to the agent. */
 function renderComponent(name, json) {
+  if (name === "line_selector") {
+    const lines = Array.isArray(json.lines) ? json.lines.slice(0, 4) : [];
+    if (!lines.length) return null;
+    const cols = lines.map(l =>
+      `<div class="gx-dev">
+        <div class="gx-phone"></div>
+        <div class="nm">${esc(l.device)}</div>
+        <div class="pr">${esc(l.number)}</div>
+        <button class="gx-btn" onclick="__gxAction('${esc(l.name)}','${esc(l.value)}','${esc(l.device)} (${esc(l.number)})')">This one</button>
+      </div>`).join("");
+    return `<div class="gx-card"><div class="gx-head">${esc(json.question || "Which phone are you upgrading?")}</div>
+      <div class="gx-devices ${lines.length === 3 ? "three" : ""}">${cols}</div></div>`;
+  }
+  if (name === "eligibility_card") {
+    const pct = Math.max(0, Math.min(100, Number(json.percent_paid) || 0));
+    const acts = (Array.isArray(json.actions) ? json.actions.slice(0, 2) : []).map(a =>
+      `<button class="gx-btn" onclick="__gxAction('${esc(a.name)}','${esc(a.value)}','${esc(a.label)}')">${esc(a.label)}</button>`).join("");
+    return `<div class="gx-card"><div class="gx-head">${esc(json.title || "Your upgrade position")}</div>
+      <div class="gx-elig">
+        <div class="gx-elig-row"><span>${esc(json.device || "Current phone")}</span>
+          <span class="gx-badge ${json.switch_up ? "on" : ""}">${json.switch_up ? "Switch Up ✓" : "No Switch Up"}</span></div>
+        <div class="gx-amount">${esc(json.amount_left || "")}</div>
+        <div class="gx-track"><span class="gx-fill" style="width:${pct}%"></span></div>
+        <div class="gx-pct">${pct}% of your current phone paid off</div>
+        ${json.detail ? `<div class="gx-detail">${esc(json.detail)}</div>` : ""}
+        <div class="gx-actions">${acts}</div>
+      </div></div>`;
+  }
+  if (name === "product_card") {
+    const specs = (Array.isArray(json.specs) ? json.specs.slice(0, 4) : []).map(s =>
+      `<div class="gx-spec"><span>${esc(s.label)}</span><b>${esc(s.value)}</b></div>`).join("");
+    const acts = (Array.isArray(json.actions) ? json.actions.slice(0, 2) : []).map(a =>
+      `<button class="gx-btn ${/skip|no thanks|decline/i.test(a.label || "") ? "ghost" : ""}" onclick="__gxAction('${esc(a.name)}','${esc(a.value)}','${esc(a.label)}: ${esc(json.name)}')">${esc(a.label)}</button>`).join("");
+    return `<div class="gx-card"><div class="gx-head">${esc(json.title || "Option")}</div>
+      <div class="gx-prod">
+        <div class="gx-prod-top"><span class="nm">${esc(json.name)}</span><span class="gx-price">${esc(json.price || "")}</span></div>
+        <p class="gx-desc">${esc(json.description || "")}</p>
+        ${specs}
+        <div class="gx-actions">${acts}</div>
+      </div></div>`;
+  }
+  if (name === "order_summary") {
+    const rows = (Array.isArray(json.items) ? json.items.slice(0, 10) : []).map(i =>
+      `<div class="gx-sum-row"><span>${esc(i.label)}</span><b>${esc(i.value)}</b></div>`).join("");
+    const a = json.action || {};
+    return `<div class="gx-card"><div class="gx-head">${esc(json.title || "Your upgrade summary")}</div>
+      <div class="gx-sum">${rows}
+        ${json.total ? `<div class="gx-sum-row total"><span>Total</span><b>${esc(json.total)}</b></div>` : ""}
+        <div class="gx-actions"><button class="gx-btn" onclick="__gxAction('${esc(a.name)}','${esc(a.value)}','${esc(a.label || "Confirm summary")}')">${esc(a.label || "Confirm")}</button></div>
+      </div></div>`;
+  }
   if (name === "handset_comparison_card") {
     const devices = Array.isArray(json.devices) ? json.devices.slice(0, 3) : [];
     if (!devices.length) return null;
@@ -534,6 +658,31 @@ function renderComponent(name, json) {
    Playground — same renderer, sample payloads, no agent needed.
    ========================================================================= */
 const SAMPLES = {
+  line: {
+    name: "line_selector",
+    json: {
+      question: "Which phone are you looking to upgrade?",
+      lines: [
+        { device: "iPhone 15", number: "07700 900201", value: "LINE-B1", name: "choose_line" },
+        { device: "Galaxy A54", number: "07700 900202", value: "LINE-B2", name: "choose_line" }
+      ]
+    }
+  },
+  eligibility: {
+    name: "eligibility_card",
+    json: {
+      title: "Your upgrade position",
+      device: "iPhone 15",
+      amount_left: "£142.50 left to pay",
+      percent_paid: 84,
+      switch_up: true,
+      detail: "Fee-free upgrade date: 14 September 2026 — or settle today, or use Switch Up.",
+      actions: [
+        { name: "eligibility_decision", value: "proceed", label: "Upgrade this phone" },
+        { name: "eligibility_decision", value: "not_now", label: "Not right now" }
+      ]
+    }
+  },
   compare: {
     name: "handset_comparison_card",
     json: {
@@ -548,6 +697,23 @@ const SAMPLES = {
       ]
     }
   },
+  product: {
+    name: "product_card",
+    json: {
+      title: "Insurance — option 2 of 3",
+      name: "Damage + theft & loss",
+      price: "£12.00/mo",
+      description: "Everything in Damage cover, plus replacement if your phone is stolen or lost.",
+      specs: [
+        { label: "Cracked screens", value: "Covered" },
+        { label: "Theft & loss", value: "Covered" }
+      ],
+      actions: [
+        { name: "choose_insurance", value: "damage_theft_loss", label: "Add this" },
+        { name: "choose_insurance", value: "skip", label: "Skip insurance" }
+      ]
+    }
+  },
   options: {
     name: "option_selector",
     json: {
@@ -558,6 +724,23 @@ const SAMPLES = {
         { label: "Wait until 14 September", sublabel: "Your fee-free upgrade date", value: "wait_for_date", name: "choose_route" }
       ]
     }
+  },
+  summary: {
+    name: "order_summary",
+    json: {
+      title: "Your upgrade — ready for the basket",
+      items: [
+        { label: "Line", value: "07700 900201 (iPhone 15)" },
+        { label: "Device", value: "iPhone 17, 256GB, Midnight" },
+        { label: "Tariff", value: "100GB plan — £20.00/mo" },
+        { label: "Extra", value: "Disney+ (included)" },
+        { label: "Insurance", value: "Damage + theft & loss — £12.00/mo" },
+        { label: "O2 Switch Up", value: "Added — £6.00/mo" },
+        { label: "Accessories", value: "MagSafe clear case — £39.00" }
+      ],
+      total: "£74.99/mo + £69.00 upfront",
+      action: { name: "confirm_summary", value: "confirmed", label: "Looks right — build my basket" }
+    }
   }
 };
 
@@ -565,11 +748,11 @@ let playgroundMode = true; // true → card taps hit the toast, not the chat
 
 function playgroundShow(kind) {
   const s = SAMPLES[kind];
+  if (!s) return;
   playgroundMode = true;
   document.getElementById('playStage').innerHTML = renderComponent(s.name, s.json);
   document.getElementById('playJson').textContent = JSON.stringify({ component_name: s.name, component_json: s.json }, null, 2);
-  document.getElementById('pb-compare').classList.toggle('active', kind === 'compare');
-  document.getElementById('pb-options').classList.toggle('active', kind === 'options');
+  document.querySelectorAll('.play-btn').forEach(b => b.classList.toggle('active', b.dataset.kind === kind));
 }
 
 /* Card interactions. Playground → explanatory toast. Live chat → the tap
@@ -729,7 +912,7 @@ window.addEventListener('ces-messenger-connected', () => {
 window.addEventListener('ces-messenger-disconnected', () => { cesConnected = false; });
 
 /* ---- init ---- */
-document.addEventListener('DOMContentLoaded', () => playgroundShow('compare'));
+document.addEventListener('DOMContentLoaded', () => playgroundShow('eligibility'));
 </script>
 </body>
 </html>

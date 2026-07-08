@@ -17,7 +17,7 @@
      same discipline as the QuickStart microsite. */
   /* Float the GECX widget as a fixed chat panel, hidden until launched. */
   /* Float the GECX widget as a fixed chat panel, hidden until launched. */
-  ces-messenger, df-messenger {
+  ces-messenger:not(.in-phone), df-messenger {
     position: fixed;
     right: 24px;
     bottom: 24px;
@@ -46,8 +46,26 @@
     --df-messenger-message-bot-font-color: #101a2e;
   }
   @media(max-width:520px){
-    ces-messenger{right:0;bottom:0;width:100vw;max-width:100vw;height:100dvh}
+    ces-messenger:not(.in-phone){right:0;bottom:0;width:100vw;max-width:100vw;height:100dvh}
   }
+
+  /* ---- phone frame (voice demo) ---- */
+  .phone-frame{position:relative;width:320px;max-width:100%;margin:22px auto 0;
+    border-radius:38px;border:10px solid #10131f;background:#10131f;
+    box-shadow:0 18px 50px rgba(0,0,0,.45)}
+  .phone-notch{position:absolute;top:10px;left:50%;transform:translateX(-50%);
+    width:110px;height:20px;border-radius:12px;background:#10131f;z-index:3}
+  .phone-screen{position:relative;height:560px;border-radius:28px;overflow:hidden;
+    background:var(--paper);display:flex;flex-direction:column}
+  .phone-appbar{display:flex;align-items:center;gap:8px;padding:26px 16px 12px;
+    background:var(--blue-deep);color:#fff}
+  .phone-appbar-brand{font-weight:800;font-size:15px}
+  .phone-appbar-title{font-size:13px;opacity:.85}
+  .phone-genui{flex:1;overflow-y:auto;padding:14px}
+  .phone-genui-hint{color:var(--muted);font-size:13px;text-align:center;margin-top:40%}
+  .phone-dock{position:relative;min-height:120px;border-top:1px solid rgba(4,6,15,.08);
+    background:#fff}
+  ces-messenger.in-phone{position:absolute;inset:0;width:100%;height:100%}
 </style>
 
 <style>
@@ -402,7 +420,20 @@
       </div>
       <div class="mode">
         <div class="mode-head"><span class="mode-tag voice">App</span><h3>Voice experience</h3></div>
-        <p>Tap the microphone in the widget to start talking, tap again to stop; the agent answers in voice. Ask it to compare handsets and the comparison card renders on screen mid-conversation — tap a card button and your choice goes back to the agent.</p>
+        <div class="phone-frame" id="phoneFrame">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="phone-appbar">
+              <span class="phone-appbar-brand">O2</span>
+              <span class="phone-appbar-title">Upgrades</span>
+            </div>
+            <div class="phone-genui" id="phoneGenui">
+              <p class="phone-genui-hint">Tap the microphone and ask about your upgrade —
+              options the agent offers will appear here.</p>
+            </div>
+            <div class="phone-dock" id="phoneDock"><!-- ces-messenger mounts here in voice mode --></div>
+          </div>
+        </div>
         <button class="hero-cta" style="margin-top:22px" onclick="openUpgradesChat('voice')">Start the voice agent →</button>
         <p class="mode-note">Voice needs microphone permission. Switching between chat and voice starts a fresh session.</p>
       </div>
@@ -865,7 +896,9 @@ const MODES = {
   },
   voice: {
     'audio-input-mode': 'DEFAULT_OFF',
-    'audio-output-mode': 'DEFAULT_ON'
+    'audio-output-mode': 'DEFAULT_ON',
+    'modality': 'call',
+    'size': 'small'
     // Voice selection ('voice' attribute) intentionally left at the widget
     // default for now — choosing a UK English voice is Pending.
   }
@@ -913,7 +946,12 @@ function buildMessenger(mode) {
   el.style.setProperty('--df-messenger-button-titlebar-background', '#04060f'); // O2 Ink
   el.style.setProperty('--df-messenger-button-titlebar-font-color', '#ffffff');
 
-  document.body.appendChild(el);
+  if (mode === 'voice') {
+    el.classList.add('in-phone');
+    document.getElementById('phoneDock').appendChild(el);
+  } else {
+    document.body.appendChild(el);
+  }
   return el;
 }
 
@@ -943,8 +981,14 @@ function registerA2uiTools() {
       }
       
       playgroundMode = false;
-      cesm.insertMessage('BOT', { payload: { html } });
-      
+      if (currentMode === 'voice') {
+        const canvas = document.getElementById('phoneGenui');
+        canvas.innerHTML = html;               // latest component replaces the previous one
+        canvas.scrollTop = 0;
+      } else {
+        cesm.insertMessage('BOT', { payload: { html } });
+      }
+
       return Promise.resolve({ status: "RENDERED", note: "Component displayed." });
     }
   );
@@ -972,6 +1016,8 @@ function openUpgradesChat(mode, seedKey) {
     cesm.remove();
     cesm = null;
     cesConnected = false;
+    const canvas = document.getElementById('phoneGenui');
+    if (canvas) canvas.innerHTML = '<p class="phone-genui-hint">Tap the microphone and ask about your upgrade — options the agent offers will appear here.</p>';
     toast(mode === 'voice' ? 'Switching to the voice demo — new session' : 'Switching to the chat demo — new session');
   }
 

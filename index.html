@@ -927,7 +927,7 @@ function registerA2uiTools() {
     }
   );
   
- /* use_a2ui_component */
+  /* use_a2ui_component */
   cesm.registerClientSideFunction(
     { toolName: CONFIG.tools.use_a2ui_component, toolDisplayName: 'use_a2ui_component' },
     (args) => {
@@ -935,14 +935,12 @@ function registerA2uiTools() {
       let json = args && args.component_json;
       if (typeof json === 'string') { try { json = JSON.parse(json); } catch (e) { json = null; } }
       
+      // Declare as const and do not reassign
       const html = json && renderComponent(args.component_name, json);
       
       if (!html) {
         return Promise.resolve({ status: "ERROR", message: "Unknown component or invalid component_json." });
       }
-      
-      // Inject the styling explicitly into the payload for the Shadow DOM
-      html = `<style>${GX_CSS}</style>` + html;
       
       playgroundMode = false;
       cesm.insertMessage('BOT', { payload: { html } });

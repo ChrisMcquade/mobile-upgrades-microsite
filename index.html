@@ -16,7 +16,8 @@
      Google session (token broker / billable session) starts on page load —
      same discipline as the QuickStart microsite. */
   /* Float the GECX widget as a fixed chat panel, hidden until launched. */
-  ces-messenger {
+  /* Float the GECX widget as a fixed chat panel, hidden until launched. */
+  ces-messenger, df-messenger {
     position: fixed;
     right: 24px;
     bottom: 24px;
@@ -25,22 +26,24 @@
     max-width: calc(100vw - 48px);
     height: min(680px, calc(100vh - 48px));
     
-    /* Inject styling into the Shadow DOM */
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    --ces-messenger-font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    /* Base */
     --df-messenger-font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    
-    /* Brand Colors */
-    --ces-messenger-primary-color: #0019a5;
     --df-messenger-primary-color: #0019a5;
     
-    /* Chat Bubble Colors */
-    --ces-messenger-chat-background-color: #f4f6fb;
-    --df-messenger-chat-background-color: #f4f6fb;
-    --ces-messenger-message-user-background: #0019a5;
-    --df-messenger-message-user-background: #0019a5;
-    --ces-messenger-message-user-font-color: #ffffff;
+    /* Titlebar / Header */
+    --df-messenger-titlebar-background: #04060f; /* O2 Ink */
+    --df-messenger-titlebar-font-color: #ffffff;
+    --df-messenger-titlebar-title-font-color: #ffffff;
+    
+    /* Chat Canvas */
+    --df-messenger-chat-background: #f4f6fb;
+    --df-messenger-chat-window-background: #f4f6fb;
+    
+    /* Bubbles */
+    --df-messenger-message-user-background: #0019a5; /* O2 Blue */
     --df-messenger-message-user-font-color: #ffffff;
+    --df-messenger-message-bot-background: #ffffff;
+    --df-messenger-message-bot-font-color: #101a2e;
   }
   @media(max-width:520px){
     ces-messenger{right:0;bottom:0;width:100vw;max-width:100vw;height:100dvh}
@@ -932,7 +935,7 @@ function registerA2uiTools() {
       let json = args && args.component_json;
       if (typeof json === 'string') { try { json = JSON.parse(json); } catch (e) { json = null; } }
       
-      let html = json && renderComponent(args.component_name, json);
+      const html = json && renderComponent(args.component_name, json);
       
       if (!html) {
         return Promise.resolve({ status: "ERROR", message: "Unknown component or invalid component_json." });
@@ -974,14 +977,15 @@ function openUpgradesChat(mode, seedKey) {
     toast(mode === 'voice' ? 'Switching to the voice demo — new session' : 'Switching to the chat demo — new session');
   }
 
-  window.addEventListener('ces-messenger-loaded', () => {
+ window.addEventListener('ces-messenger-loaded', () => {
   registerA2uiTools();
   
-  // Pierce the Shadow DOM to force the font globally across the entire widget
+  // Pierce the Shadow DOM to inject our custom card CSS and global font safely
   if (cesm && cesm.shadowRoot) {
     const rootStyle = document.createElement('style');
     rootStyle.innerHTML = `
       * { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important; }
+      ${GX_CSS}
     `;
     cesm.shadowRoot.appendChild(rootStyle);
   }

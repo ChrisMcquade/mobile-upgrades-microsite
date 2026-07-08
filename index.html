@@ -870,34 +870,35 @@ function buildMessenger(mode) {
 
 function registerA2uiTools() {
   /* get_a2ui_catalog */
-  if (CONFIG.tools.get_a2ui_catalog) {
-    cesm.registerClientSideFunction(
-      CONFIG.tools.get_a2ui_catalog, // Pass the string directly
-      () => {
-        qsLog('tool: get_a2ui_catalog');
-        return Promise.resolve({ status: "OK", catalog: A2UI_CATALOG });
-      }
-    );
-  }
+  cesm.registerClientSideFunction(
+    'get_a2ui_catalog', // Use the plain displayName string
+    (args) => {
+      qsLog('tool: get_a2ui_catalog');
+      return Promise.resolve({ status: "OK", catalog: A2UI_CATALOG });
+    }
+  );
   
   /* use_a2ui_component */
-  if (CONFIG.tools.use_a2ui_component) {
-    cesm.registerClientSideFunction(
-      CONFIG.tools.use_a2ui_component, // Pass the string directly
-      (args) => {
-        qsLog('tool: use_a2ui_component → ' + (args && args.component_name));
-        let json = args && args.component_json;
-        if (typeof json === 'string') { try { json = JSON.parse(json); } catch (e) { json = null; } }
-        const html = json && renderComponent(args.component_name, json);
-        if (!html) {
-          return Promise.resolve({ status: "ERROR", message: "Unknown component or invalid component_json." });
-        }
-        playgroundMode = false;
-        cesm.insertMessage('BOT', { payload: { html } });
-        return Promise.resolve({ status: "RENDERED", note: "Component displayed." });
+  cesm.registerClientSideFunction(
+    'use_a2ui_component', // Use the plain displayName string
+    (args) => {
+      qsLog('tool: use_a2ui_component → ' + (args && args.component_name));
+      let json = args && args.component_json;
+      if (typeof json === 'string') { try { json = JSON.parse(json); } catch (e) { json = null; } }
+      
+      const html = json && renderComponent(args.component_name, json);
+      
+      if (!html) {
+        return Promise.resolve({ status: "ERROR", message: "Unknown component or invalid component_json." });
       }
-    );
-  }
+      
+      playgroundMode = false;
+      cesm.insertMessage('BOT', { payload: { html } });
+      
+      // Must return a response so the agent knows the tool succeeded
+      return Promise.resolve({ status: "RENDERED", note: "Component displayed." });
+    }
+  );
 }
 
 function openUpgradesChat(mode, seedKey) {

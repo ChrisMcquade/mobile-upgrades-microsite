@@ -61,10 +61,29 @@
     background:var(--blue-deep);color:#fff}
   .phone-appbar-brand{font-weight:800;font-size:15px}
   .phone-appbar-title{font-size:13px;opacity:.85}
-  .phone-genui{flex:1;overflow-y:auto;padding:14px}
-  .phone-genui-hint{color:var(--muted);font-size:13px;text-align:center;margin-top:40%}
-  .phone-dock{position:relative;min-height:120px;border-top:1px solid rgba(4,6,15,.08);
-    background:#fff}
+  .phone-app{flex:1;overflow-y:auto;background:#f4f6fb}
+  .phone-hero{background:linear-gradient(160deg,#0019a5,#0032d9);padding:18px 14px 22px;color:#fff}
+  .phone-hero-hi{font-size:22px;font-weight:800;margin:6px 0 14px}
+  .phone-card{background:#fff;border-radius:10px;padding:12px 14px;color:#04060f;
+    box-shadow:0 2px 8px rgba(4,6,15,.10)}
+  .phone-card-upgrade{border-left:4px solid #17c964}
+  .phone-card-bill{margin:14px}
+  .phone-card-title{font-weight:700;font-size:14px;margin:0 0 4px}
+  .phone-card-sub{font-size:12px;color:#5a6072;margin:0 0 6px}
+  .phone-card-link{color:#0019a5;font-weight:700;font-size:13px}
+  .phone-bill-amount{font-size:22px;font-weight:800;margin:4px 0 0}
+  .phone-bill-paid{font-size:12px;color:#17c964;font-weight:700;margin-left:8px}
+  .phone-mic-pill{position:absolute;bottom:118px;left:50%;transform:translateX(-50%);
+    background:#00d3e6;color:#04122e;font-size:12px;font-weight:700;
+    padding:5px 12px;border-radius:999px;z-index:4;pointer-events:none}
+  .phone-dock{position:absolute;left:0;right:0;bottom:0;height:110px;z-index:3}
+  .phone-sheet{position:absolute;left:0;right:0;bottom:0;max-height:78%;z-index:5;
+    background:#fff;border-radius:18px 18px 0 0;box-shadow:0 -8px 30px rgba(4,6,15,.25);
+    transform:translateY(110%);transition:transform .32s ease;overflow:hidden;
+    display:flex;flex-direction:column}
+  .phone-sheet.up{transform:translateY(0)}
+  .phone-sheet-grabber{width:44px;height:5px;border-radius:3px;background:#d5d9e4;margin:8px auto 4px}
+  .phone-sheet-body{overflow-y:auto;padding:10px 14px 16px}
   ces-messenger.in-phone{position:absolute;inset:0;width:100%;height:100%}
 </style>
 
@@ -427,10 +446,26 @@
               <span class="phone-appbar-brand">O2</span>
               <span class="phone-appbar-title">Upgrades</span>
             </div>
-            <div class="phone-genui" id="phoneGenui">
-              <p class="phone-genui-hint">Tap the microphone and ask about your upgrade —
-              options the agent offers will appear here.</p>
+            <div class="phone-app">
+              <div class="phone-hero">
+                <p class="phone-hero-hi">Hello, ALEX</p>
+                <div class="phone-card phone-card-upgrade">
+                  <p class="phone-card-title">Good news — you can upgrade today</p>
+                  <p class="phone-card-sub">Choose a brand new phone or SIM Only plan. Charges may apply.</p>
+                  <span class="phone-card-link">&gt; View upgrade options</span>
+                </div>
+              </div>
+              <div class="phone-card phone-card-bill">
+                <p class="phone-card-title">Your latest bill</p>
+                <p class="phone-card-sub">27 Jun – 26 Jul 2026</p>
+                <p class="phone-bill-amount">£25.00 <span class="phone-bill-paid">✓ Paid</span></p>
+              </div>
             </div>
+            <div class="phone-sheet" id="phoneSheet" aria-hidden="true">
+              <div class="phone-sheet-grabber"></div>
+              <div class="phone-sheet-body" id="phoneGenui"></div>
+            </div>
+            <div class="phone-mic-pill" id="phoneMicPill">Continue conversation</div>
             <div class="phone-dock" id="phoneDock"><!-- ces-messenger mounts here in voice mode --></div>
           </div>
         </div>
@@ -676,7 +711,7 @@ function renderComponent(name, json) {
         <div class="gx-phone"></div>
         <div class="nm">${esc(l.device)}</div>
         <div class="pr">${esc(l.number)}</div>
-        <button class="gx-btn" onclick="__gxAction('${esc(l.name)}','${esc(l.value)}','${esc(l.device)} (${esc(l.number)})')">This one</button>
+        <button class="gx-btn" data-gx-action="${esc(l.name)}" data-gx-value="${esc(l.value)}" data-gx-label="${esc(l.device)} (${esc(l.number)})">This one</button>
       </div>`).join("");
     return `<div class="gx-card"><div class="gx-head">${esc(json.question || "Which phone are you upgrading?")}</div>
       <div class="gx-devices ${lines.length === 3 ? "three" : ""}">${cols}</div></div>`;
@@ -684,7 +719,7 @@ function renderComponent(name, json) {
   if (name === "eligibility_card") {
     const pct = Math.max(0, Math.min(100, Number(json.percent_paid) || 0));
     const acts = (Array.isArray(json.actions) ? json.actions.slice(0, 2) : []).map(a =>
-      `<button class="gx-btn" onclick="__gxAction('${esc(a.name)}','${esc(a.value)}','${esc(a.label)}')">${esc(a.label)}</button>`).join("");
+      `<button class="gx-btn" data-gx-action="${esc(a.name)}" data-gx-value="${esc(a.value)}" data-gx-label="${esc(a.label)}">${esc(a.label)}</button>`).join("");
     return `<div class="gx-card"><div class="gx-head">${esc(json.title || "Your upgrade position")}</div>
       <div class="gx-elig">
         <div class="gx-elig-row"><span>${esc(json.device || "Current phone")}</span>
@@ -700,7 +735,7 @@ function renderComponent(name, json) {
     const specs = (Array.isArray(json.specs) ? json.specs.slice(0, 4) : []).map(s =>
       `<div class="gx-spec"><span>${esc(s.label)}</span><b>${esc(s.value)}</b></div>`).join("");
     const acts = (Array.isArray(json.actions) ? json.actions.slice(0, 2) : []).map(a =>
-      `<button class="gx-btn ${/skip|no thanks|decline/i.test(a.label || "") ? "ghost" : ""}" onclick="__gxAction('${esc(a.name)}','${esc(a.value)}','${esc(a.label)}: ${esc(json.name)}')">${esc(a.label)}</button>`).join("");
+      `<button class="gx-btn ${/skip|no thanks|decline/i.test(a.label || "") ? "ghost" : ""}" data-gx-action="${esc(a.name)}" data-gx-value="${esc(a.value)}" data-gx-label="${esc(a.label)}: ${esc(json.name)}">${esc(a.label)}</button>`).join("");
     return `<div class="gx-card"><div class="gx-head">${esc(json.title || "Option")}</div>
       <div class="gx-prod">
         <div class="gx-prod-top"><span class="nm">${esc(json.name)}</span><span class="gx-price">${esc(json.price || "")}</span></div>
@@ -716,7 +751,7 @@ function renderComponent(name, json) {
     return `<div class="gx-card"><div class="gx-head">${esc(json.title || "Your upgrade summary")}</div>
       <div class="gx-sum">${rows}
         ${json.total ? `<div class="gx-sum-row total"><span>Total</span><b>${esc(json.total)}</b></div>` : ""}
-        <div class="gx-actions"><button class="gx-btn" onclick="__gxAction('${esc(a.name)}','${esc(a.value)}','${esc(a.label || "Confirm summary")}')">${esc(a.label || "Confirm")}</button></div>
+        <div class="gx-actions"><button class="gx-btn" data-gx-action="${esc(a.name)}" data-gx-value="${esc(a.value)}" data-gx-label="${esc(a.label || "Confirm summary")}">${esc(a.label || "Confirm")}</button></div>
       </div></div>`;
   }
   if (name === "handset_comparison_card") {
@@ -732,7 +767,7 @@ function renderComponent(name, json) {
         <div class="gx-spec"><span>Camera</span><b>${esc(d.camera)}</b></div>
         <div class="gx-spec"><span>Battery</span><b>${esc(d.battery)}</b></div>
         <div class="gx-spec"><span>Screen</span><b>${esc(d.screen)}</b></div>
-        <button class="gx-btn" onclick="__gxAction('${esc(act.name)}','${esc(act.value)}','${esc(d.name)}')">${esc(act.label || "Choose")}</button>
+        <button class="gx-btn" data-gx-action="${esc(act.name)}" data-gx-value="${esc(act.value)}" data-gx-label="${esc(d.name)}">${esc(act.label || "Choose")}</button>
       </div>`;
     }).join("");
     return `<div class="gx-card"><div class="gx-head">${esc(json.title || "Compare handsets")}</div>
@@ -742,7 +777,7 @@ function renderComponent(name, json) {
     const options = Array.isArray(json.options) ? json.options.slice(0, 6) : [];
     if (!options.length) return null;
     const rows = options.map(o =>
-      `<button class="gx-opt" onclick="__gxAction('${esc(o.name)}','${esc(o.value)}','${esc(o.label)}')">
+      `<button class="gx-opt" data-gx-action="${esc(o.name)}" data-gx-value="${esc(o.value)}" data-gx-label="${esc(o.label)}">
          <span><span class="ol">${esc(o.label)}</span>${o.sublabel ? `<span class="os">${esc(o.sublabel)}</span>` : ""}</span>
          <span class="go">→</span>
        </button>`).join("");
@@ -872,6 +907,18 @@ function __gxAction(name, value, label) {
   toast(`action → ${name}: ${value} · in the live agent this is sent as your reply`);
 }
 
+/* The voice phone frame shows GenUI in a slide-up sheet over the MyO2 mock. */
+function phoneSheetShow(html){
+  const sheet = document.getElementById('phoneSheet');
+  document.getElementById('phoneGenui').innerHTML = html;
+  sheet.classList.add('up'); sheet.setAttribute('aria-hidden','false');
+}
+function phoneSheetHide(){
+  const sheet = document.getElementById('phoneSheet');
+  sheet.classList.remove('up'); sheet.setAttribute('aria-hidden','true');
+  setTimeout(() => { document.getElementById('phoneGenui').innerHTML = ''; }, 350);
+}
+
 /* =========================================================================
    Chat — lazy ces-messenger creation, dual modality, client functions, seeds.
    No session is opened on page load; the element is created (and the token
@@ -928,23 +975,48 @@ function buildMessenger(mode) {
   el.setAttribute('theme-id', 'light');
   el.setAttribute('disable-bubble', 'true');
   el.setAttribute('disable-image-uploads', 'true');
-  
+  el.setAttribute('auto-open-chat', 'true');
+
   const audio = MODES[mode] || MODES.chat;
   Object.entries(audio).forEach(([k, v]) => el.setAttribute(k, v));
   if (qsDebugOn) el.setAttribute('enable-debugger', 'true');
 
-  // Force styling variables directly on the element to pierce the Shadow DOM
-  const fontStr = '"Helvetica Neue", Helvetica, Arial, sans-serif';
-  el.style.setProperty('--df-messenger-font-family', fontStr);
-  el.style.setProperty('--ces-messenger-font-family', fontStr);
-  
-  // O2 Brand Colors
-  el.style.setProperty('--df-messenger-chat-background-color', '#f4f6fb');
-  el.style.setProperty('--df-messenger-message-user-background', '#0019a5'); // O2 Blue
-  el.style.setProperty('--df-messenger-message-user-font-color', '#ffffff');
-  el.style.setProperty('--df-messenger-message-bot-background', '#ffffff');
-  el.style.setProperty('--df-messenger-button-titlebar-background', '#04060f'); // O2 Ink
-  el.style.setProperty('--df-messenger-button-titlebar-font-color', '#ffffff');
+  // Skin the widget from inside its shadow DOM — page CSS cannot reach in, and
+  // this widget never reads df-messenger CSS variables, so use custom-css.
+  if (mode === 'voice') {
+    el.setAttribute('custom-css', `
+      .voice-assistant-container, .voice-assistant-container.small {
+        position: absolute !important; inset: 0 !important;
+        width: 100% !important; height: 100% !important;
+        margin: 0 !important; border-radius: 0 !important; box-shadow: none !important;
+        background: transparent !important;
+      }
+      header { display: none !important; }
+      main { background: transparent !important; border: none !important; box-shadow: none !important; }
+      li.from-user, li.from-bot { display: none !important; }
+      .call-circle { transform: scale(0.55); margin: 0 auto !important; }
+      footer, .footer-container { background: transparent !important; border: none !important; }
+      .talk-button {
+        width: 64px !important; height: 64px !important; border-radius: 50% !important;
+        background: #0019a5 !important; color: #fff !important;
+        box-shadow: 0 6px 18px rgba(0,25,165,.4) !important; margin: 0 auto !important;
+      }
+    `);
+  } else {
+    el.setAttribute('custom-css', `
+      * { font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+      header { background: #0019a5 !important; }
+      header h1 { color: #fff !important; font-size: 16px !important; }
+      main { background: #f4f6fb !important; }
+      li.from-bot { background: #fff !important; border-radius: 14px 14px 14px 4px !important;
+                    box-shadow: 0 1px 3px rgba(4,6,15,.08) !important; }
+      li.from-user { background: #0019a5 !important; color: #fff !important;
+                     border-radius: 14px 14px 4px 14px !important; }
+      footer, .input-container { background: #fff !important; }
+      .input-wrapper { border: 1px solid rgba(4,6,15,.15) !important; border-radius: 22px !important; }
+      button.send { background: #00a0e4 !important; }
+    `);
+  }
 
   if (mode === 'voice') {
     el.classList.add('in-phone');
@@ -982,16 +1054,25 @@ function registerA2uiTools() {
       
       playgroundMode = false;
       if (currentMode === 'voice') {
-        const canvas = document.getElementById('phoneGenui');
-        canvas.innerHTML = html;               // latest component replaces the previous one
-        canvas.scrollTop = 0;
+        phoneSheetShow(html);
       } else {
-        cesm.insertMessage('BOT', { payload: { html } });
+        cesm.insertMessage('BOT', { payload: { html, safe: true, templateId: 'gx_component' } });
       }
 
       return Promise.resolve({ status: "RENDERED", note: "Component displayed." });
     }
   );
+
+  /* Card taps in the chat transcript return through the widget's rich message
+     handler. safe:true keeps our data-gx-* attributes through the widget's
+     DOMPurify pass (which would otherwise strip both data-* and inline
+     handlers); the HTML is our own renderer's output from schema-validated
+     JSON, so skipping sanitisation is acceptable for this POC. */
+  cesm.registerRichMessageHandler('gx_component', (message, clickedElement) => {
+    const el = clickedElement && clickedElement.closest('[data-gx-action]');
+    if (el) __gxAction(el.dataset.gxAction, el.dataset.gxValue, el.dataset.gxLabel);
+    return {}; // required — the widget reads .action off the return value
+  });
 }
 
 function openUpgradesChat(mode, seedKey) {
@@ -1004,7 +1085,7 @@ function openUpgradesChat(mode, seedKey) {
 
   /* Same mode, element exists → just open (and seed if connected). */
   if (cesm && currentMode === mode) {
-    cesm.open();
+    if (!cesConnected) cesm.open();
     if (pendingSeed && cesConnected) { cesm.sessionInput(pendingSeed); pendingSeed = null; }
     return;
   }
@@ -1016,8 +1097,7 @@ function openUpgradesChat(mode, seedKey) {
     cesm.remove();
     cesm = null;
     cesConnected = false;
-    const canvas = document.getElementById('phoneGenui');
-    if (canvas) canvas.innerHTML = '<p class="phone-genui-hint">Tap the microphone and ask about your upgrade — options the agent offers will appear here.</p>';
+    phoneSheetHide();
     toast(mode === 'voice' ? 'Switching to the voice demo — new session' : 'Switching to the chat demo — new session');
   }
 
@@ -1033,8 +1113,6 @@ function openUpgradesChat(mode, seedKey) {
     `;
     cesm.shadowRoot.appendChild(rootStyle);
   }
-  
-  cesm.open();
 }, { once: true });
 
   currentMode = mode;
@@ -1049,7 +1127,24 @@ window.addEventListener('ces-messenger-connected', () => {
 window.addEventListener('ces-messenger-disconnected', () => { cesConnected = false; });
 
 /* ---- init ---- */
-document.addEventListener('DOMContentLoaded', () => playgroundShow('eligibility'));
+document.addEventListener('DOMContentLoaded', () => {
+  playgroundShow('eligibility');
+
+  /* Card taps in the in-page playground (page DOM, our own renderer output). */
+  document.getElementById('playStage').addEventListener('click', (e) => {
+    const el = e.target.closest('[data-gx-action]');
+    if (!el) return;
+    __gxAction(el.dataset.gxAction, el.dataset.gxValue, el.dataset.gxLabel);
+  });
+
+  /* Card taps inside the voice phone sheet. */
+  document.getElementById('phoneGenui').addEventListener('click', (e) => {
+    const el = e.target.closest('[data-gx-action]');
+    if (!el) return;
+    __gxAction(el.dataset.gxAction, el.dataset.gxValue, el.dataset.gxLabel);
+    phoneSheetHide(); // selection made — slide back down, journey continues in app
+  });
+});
 </script>
 </body>
 </html>

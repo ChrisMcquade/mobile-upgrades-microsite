@@ -587,10 +587,16 @@ if (qsDebugOn) {
   // Mirror the SDK's own debug buffer (enable-debugger → window.cesMessengerLogs)
   // into the overlay, so downstream traffic — transcripts, agent replies, audio
   // events — is visible on a phone. The buffer only fills while qsdebug is on.
-  let qsSdkSeen = 0;
+  let qsSdkSeen = 0, qsSdkShape = '';
   setInterval(() => {
     const logs = window.cesMessengerLogs;
-    if (!Array.isArray(logs)) return;
+    if (!Array.isArray(logs)) {
+      // Surface the buffer's actual shape once, so a mismatch with the
+      // expected array API is visible rather than silently logging nothing.
+      const shape = logs === undefined ? '' : (logs === null ? 'null' : typeof logs);
+      if (shape && shape !== qsSdkShape) { qsSdkShape = shape; qsLog('SDK: cesMessengerLogs exists but is ' + shape + ', not an array'); }
+      return;
+    }
     for (; qsSdkSeen < logs.length; qsSdkSeen++) {
       let s;
       try { s = typeof logs[qsSdkSeen] === 'string' ? logs[qsSdkSeen] : JSON.stringify(logs[qsSdkSeen]); }
@@ -952,7 +958,10 @@ const MODES = {
     'audio-output-mode': 'DISABLED'
   },
   voice: {
-    'audio-input-mode': 'DEFAULT_OFF',
+    // DEFAULT_ON keeps the mic live for the whole session so the customer can
+    // just talk — with DEFAULT_OFF the talk button behaved as push-to-talk
+    // (mic only while pressed), and replies queued up behind the held button.
+    'audio-input-mode': 'DEFAULT_ON',
     'audio-output-mode': 'DEFAULT_ON',
     'modality': 'call',
     'size': 'small'

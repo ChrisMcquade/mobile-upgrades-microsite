@@ -981,37 +981,47 @@ function buildMessenger(mode) {
   // this widget never reads df-messenger CSS variables, so use custom-css.
   if (mode === 'voice') {
     el.setAttribute('custom-css', `
+      /* Voice-mode shadow DOM (verified from a live dump):
+           section.voice-assistant-container
+             div.assistant-container
+               main
+                 header  (h1, mute-button, close-button)
+                 ul > li.call-circle > div.call-circle-inner
+                 footer > .footer-container > .input-container > .talk-button
+         The talk button is in the footer INSIDE main, and is NOT inside the
+         call-circle. Everything above the footer must be hidden or the tall
+         call visualisation pushes the footer out of the ~96px dock. */
       .voice-assistant-container, .voice-assistant-container.small {
         position: absolute !important; inset: 0 !important;
         width: 100% !important; height: 100% !important;
         margin: 0 !important; border-radius: 0 !important;
         box-shadow: none !important; background: transparent !important;
+        overflow: visible !important;
       }
-      header { display: none !important; }
-      /* The talk button renders inside <main> in this ces-messenger build, so
-         main must stay visible — strip it to a transparent centered flex box
-         instead of hiding it (display:none here removes the button too). */
-      main {
+      .assistant-container {
+        width: 100% !important; height: 100% !important;
+        margin: 0 !important; padding: 0 !important;
+        background: transparent !important;
+      }
+      main, main.call, main.call.small {
         position: absolute !important; inset: 0 !important;
+        width: 100% !important; height: 100% !important;
         margin: 0 !important; padding: 0 !important;
         display: flex !important; flex-direction: column !important;
         align-items: center !important; justify-content: center !important;
         background: transparent !important; border: none !important;
-        box-shadow: none !important; overflow: visible !important;
+        box-shadow: none !important; border-radius: 0 !important;
+        overflow: visible !important;
       }
-      li.from-user, li.from-bot { display: none !important; }
-      /* Collapse the large call visualisation to button size rather than
-         hiding it, in case the talk button is nested inside it. */
-      .call-circle {
-        width: 64px !important; height: 64px !important;
-        min-width: 0 !important; min-height: 0 !important;
-        transform: none !important; margin: 0 auto !important;
-        background: transparent !important; box-shadow: none !important;
-      }
-      footer, .footer-container, .input-container, .input-wrapper {
+      main header { display: none !important; }
+      main ul { display: none !important; }
+      footer, .footer-container, .input-container {
+        position: static !important;
         display: flex !important; justify-content: center !important;
-        align-items: center !important; background: transparent !important;
-        border: none !important; box-shadow: none !important;
+        align-items: center !important;
+        width: auto !important; margin: 0 !important; padding: 0 !important;
+        background: transparent !important; border: none !important;
+        box-shadow: none !important;
       }
       .talk-button {
         display: flex !important; align-items: center !important;

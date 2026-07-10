@@ -584,6 +584,20 @@ if (qsDebugOn) {
   };
   ['ces-messenger-loaded','ces-messenger-connected','ces-messenger-disconnected']
     .forEach(evt => window.addEventListener(evt, e => qsLog(evt + (e.detail ? ': ' + JSON.stringify(e.detail) : ''))));
+  // Mirror the SDK's own debug buffer (enable-debugger → window.cesMessengerLogs)
+  // into the overlay, so downstream traffic — transcripts, agent replies, audio
+  // events — is visible on a phone. The buffer only fills while qsdebug is on.
+  let qsSdkSeen = 0;
+  setInterval(() => {
+    const logs = window.cesMessengerLogs;
+    if (!Array.isArray(logs)) return;
+    for (; qsSdkSeen < logs.length; qsSdkSeen++) {
+      let s;
+      try { s = typeof logs[qsSdkSeen] === 'string' ? logs[qsSdkSeen] : JSON.stringify(logs[qsSdkSeen]); }
+      catch (err) { s = String(logs[qsSdkSeen]); }
+      qsLog('SDK: ' + String(s).slice(0, 600));
+    }
+  }, 500);
 }
 
 /* ---- toast ---- */
@@ -1034,6 +1048,10 @@ function buildMessenger(mode) {
       .talk-button.talking {
         background: #e4002b !important;
         box-shadow: 0 6px 18px rgba(228,0,43,.45) !important;
+      }
+      /* The mic glyph is a dark img asset; force it white on the blue/red disc. */
+      .talk-button img, .mic-container img {
+        filter: brightness(0) invert(1) !important;
       }
     `);
   } else {

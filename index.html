@@ -73,10 +73,7 @@
   .phone-card-link{color:#0019a5;font-weight:700;font-size:13px}
   .phone-bill-amount{font-size:22px;font-weight:800;margin:4px 0 0}
   .phone-bill-paid{font-size:12px;color:#17c964;font-weight:700;margin-left:8px}
-  .phone-mic-pill{position:absolute;bottom:118px;left:50%;transform:translateX(-50%);
-    background:#00d3e6;color:#04122e;font-size:12px;font-weight:700;
-    padding:5px 12px;border-radius:999px;z-index:4;pointer-events:none}
-  .phone-dock{position:absolute;left:0;right:0;bottom:0;height:110px;z-index:3}
+  .phone-dock{position:absolute;left:0;right:0;bottom:0;height:96px;z-index:3}
   .phone-sheet{position:absolute;left:0;right:0;bottom:0;max-height:78%;z-index:5;
     background:#fff;border-radius:18px 18px 0 0;box-shadow:0 -8px 30px rgba(4,6,15,.25);
     transform:translateY(110%);transition:transform .32s ease;overflow:hidden;
@@ -465,7 +462,6 @@
               <div class="phone-sheet-grabber"></div>
               <div class="phone-sheet-body" id="phoneGenui"></div>
             </div>
-            <div class="phone-mic-pill" id="phoneMicPill">Continue conversation</div>
             <div class="phone-dock" id="phoneDock"><!-- ces-messenger mounts here in voice mode --></div>
           </div>
         </div>
@@ -988,18 +984,25 @@ function buildMessenger(mode) {
       .voice-assistant-container, .voice-assistant-container.small {
         position: absolute !important; inset: 0 !important;
         width: 100% !important; height: 100% !important;
-        margin: 0 !important; border-radius: 0 !important; box-shadow: none !important;
-        background: transparent !important;
+        margin: 0 !important; border-radius: 0 !important;
+        box-shadow: none !important; background: transparent !important;
       }
       header { display: none !important; }
-      main { background: transparent !important; border: none !important; box-shadow: none !important; }
-      li.from-user, li.from-bot { display: none !important; }
-      .call-circle { transform: scale(0.55); margin: 0 auto !important; }
-      footer, .footer-container { background: transparent !important; border: none !important; }
+      main { display: none !important; }
+      .input-container, .input-wrapper {
+        display: flex !important; justify-content: center !important;
+        align-items: center !important; background: transparent !important;
+        border: none !important; box-shadow: none !important;
+      }
       .talk-button {
-        width: 64px !important; height: 64px !important; border-radius: 50% !important;
-        background: #0019a5 !important; color: #fff !important;
-        box-shadow: 0 6px 18px rgba(0,25,165,.4) !important; margin: 0 auto !important;
+        width: 64px !important; height: 64px !important;
+        border-radius: 50% !important; background: #0019a5 !important;
+        box-shadow: 0 6px 18px rgba(0,25,165,.4) !important;
+        margin: 0 auto !important; cursor: pointer !important;
+      }
+      .talk-button.talking {
+        background: #e4002b !important;
+        box-shadow: 0 6px 18px rgba(228,0,43,.45) !important;
       }
     `);
   } else {
